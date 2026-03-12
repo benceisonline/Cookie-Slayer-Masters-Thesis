@@ -1,6 +1,5 @@
-# Inspect-ish Highlighter
-
-Simple Chrome extension that follows the cursor, highlights elements on hover, and on click shows a small popup with the visible text of the clicked element.
+# Cookie Slayer Masters Thesis
+Update this at some point.
 
 Installation (developer mode):
 
