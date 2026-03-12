@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "Inspect-ish Highlighter",
+  "version": "1.0",
+  "description": "Follow cursor, highlight clicked element, show visible text",
+  "permissions": ["scripting", "activeTab"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "host_permissions": ["<all_urls>"],
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content-script.js"],
+      "css": ["styles.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}
