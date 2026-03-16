@@ -4,7 +4,7 @@ export function createOverlay() {
     const overlay = document.createElement('div');
     overlay.id = IDS.OVERLAY;
     Object.assign(overlay.style, {
-        position: 'absolute',
+        position: 'fixed',
         zIndex: STYLES.Z_INDEX,
         pointerEvents: 'none',
         border: `2px solid ${STYLES.PRIMARY_BLUE}`,
@@ -12,6 +12,7 @@ export function createOverlay() {
         boxSizing: 'border-box',
         display: 'none',
         opacity: '0',
+        transform: 'scale(1)',
         transition: 'opacity 180ms ease, transform 160ms ease',
         borderRadius: '10px'
     });
@@ -50,14 +51,21 @@ export function createEditContainer() {
         background: 'rgba(255,255,255,0.98)',
         padding: '6px',
         borderRadius: '8px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.12)'
+        boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
+        opacity: '0',
+        transform: 'translateY(-4px)',
+        transition: 'opacity 200ms ease, transform 160ms ease',
+        minWidth: 'auto',
+        boxSizing: 'border-box'
     });
 
     container.innerHTML = `
-        <form id="${IDS.EDIT_FORM}">
-            <textarea id="${IDS.EDIT_INPUT}" placeholder="What can I help you with" style="width:260px; padding:8px; border-radius:6px; border:1px solid #ccc;"></textarea>
-            <button type="submit" id="ci-edit-submit" style="margin-left:8px; padding:6px 10px; border-radius:6px; background:#3498db; color:#fff;" disabled>Apply</button>
-            <div class="ci-spinner" style="display:none"></div>
+        <form id="${IDS.EDIT_FORM}" style="display:flex; align-items:center; gap:8px; flex-wrap:nowrap;">
+            <textarea id="${IDS.EDIT_INPUT}" placeholder="What can I help you with?" style="flex:1 1 auto; min-width:200px; max-width:520px; padding:8px; border-radius:6px; border:1px solid #ccc; box-sizing:border-box;"></textarea>
+            <button type="submit" id="ci-edit-submit" style="margin-left:6px; padding:6px 10px; border-radius:6px; background:#3498db; color:#fff; display:flex; align-items:center; white-space:nowrap;" disabled>
+                <span class="ci-edit-label">Send</span>
+                <div class="ci-spinner" style="display:none; margin-left:8px"></div>
+            </button>
         </form>
     `;
     document.documentElement.appendChild(container);

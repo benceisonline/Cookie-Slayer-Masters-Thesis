@@ -26,18 +26,22 @@ export const PATTERNS = {
 };
 
 export const IDS = {
-    OVERLAY: 'ci-click-overlay',
-    TOGGLE: 'ci-toggle-btn',
-    EDIT_CONTAINER: 'ci-edit-container',
-    EDIT_FORM: 'ci-edit-form',
-    EDIT_INPUT: 'ci-edit-input',
-    CONNECTOR_SVG: 'ci-connector-svg'
+    OVERLAY: 'inspector-overlay',
+    TOGGLE: 'inspector-toggle',
+    EDIT_CONTAINER: 'prompt-input',
+    EDIT_FORM: 'prompt-form',
+    EDIT_INPUT: 'prompt-input-field',
+    EDIT_SUBMIT: 'prompt-submit',
+    CONNECTOR_SVG: 'inspector-connector-svg'
 };
 
 export const CLASSES = {
-    HOVER: 'ci-hover-highlight',
-    POSTIT: 'ci-postit',
-    SHAKE: 'ci-shake'
+    HOVER: 'inspector-hover',
+    POSTIT: 'post-it',
+    SHAKE: 'inspector-shake',
+    SPINNER: 'prompt-spinner',
+    EDIT_LABEL: 'prompt-edit-label',
+    LOADING: 'prompt-loading'
 };
 
 export const STYLES = {

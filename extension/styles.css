@@ -1,38 +1,93 @@
-/* Minimal styles for the inspect-ish extension UI */
-/* Minimal styles for the inspect-ish extension UI */
-#ci-click-overlay { pointer-events: none; border-radius: 10px; }
-/* popup removed; no tooltip-like text displayed */
+/* Minimal styles for the extension UI */
 
-/* Toggle button visuals are injected via content script's <style>, but include fallbacks here */
-#ci-toggle-btn { position: fixed; right: 14px; bottom: 14px; z-index:2147483647; width:44px; height:44px; border-radius:50%; background:#fff; border:1px solid rgba(0,0,0,0.08); display:flex; align-items:center; justify-content:center; box-shadow:0 2px 10px rgba(0,0,0,0.12); cursor:pointer; }
+/* Overlay */
+#ci-click-overlay { pointer-events: none; border-radius: 10px; opacity: 0; transition: opacity 200ms ease, transform 160ms ease; }
+
+/* Toggle button (fallback visuals) */
+#ci-toggle-btn {
+	position: fixed;
+	right: 14px;
+	top: 14px;
+	z-index: 2147483647;
+	width: 44px;
+	height: 44px;
+	border-radius: 50%;
+	background: #fff;
+	border: 1px solid rgba(0,0,0,0.08);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	box-shadow: 0 2px 10px rgba(0,0,0,0.12);
+	cursor: pointer;
+}
 #ci-toggle-btn[data-active="true"] { background: #3498db; color: #fff; }
+#ci-toggle-btn svg { width: 20px; height: 20px; transform: translateY(-2px); }
 
-/* Hover outline for element under cursor when active */
-#ci-toggle-btn[data-active="true"] { background: #3498db; color: #fff; }
-
-/* Remove hover outline (no dotted lines on hover) */
+/* Accessibility / hover highlight */
 .ci-hover-highlight { outline: none !important; outline-offset: 0 !important; }
 
-/* Toggle button icon sizing and position (top-right)
-	Note: button fallback styles only; main styles still in this file. */
-#ci-toggle-btn { position: fixed; right: 14px; top: 14px; z-index:2147483647; width:44px; height:44px; border-radius:50%; background:#fff; border:1px solid rgba(0,0,0,0.08); display:flex; align-items:center; justify-content:center; box-shadow:0 2px 10px rgba(0,0,0,0.12); cursor:pointer; }
-#ci-toggle-btn svg { width:20px; height:20px; transform: translateY(-2px); }
+/* Shared CI font stack */
+:root { --ci-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; }
 
-/* Edit input container (appears under the toggle) */
-#ci-edit-container { display: none; }
-#ci-edit-container textarea { font-family: inherit; font-size: 14px; line-height: 1.3; }
+/* Prompt edit container */
+#ci-edit-container {
+	display: none;
+	opacity: 0;
+	transform: translateY(-4px);
+	transition: opacity 200ms ease, transform 160ms ease;
+	font-family: var(--ci-font) !important;
+}
+#ci-edit-container.ci-visible { display: block; opacity: 1; transform: translateY(0); }
+#ci-edit-container form { display:flex; align-items:center; gap:8px; flex-wrap:nowrap; }
+#ci-edit-container textarea {
+	flex: 0 0 240px;
+	min-width: 120px;
+	max-width: 360px;
+	font-family: inherit;
+	font-size: 14px;
+	line-height: 1.3;
+	color: #222;
+}
 #ci-edit-container button { font-family: inherit; font-size: 13px; cursor: pointer; }
 
-/* spinner shown while waiting for LLM response */
-.ci-spinner { width:16px; height:16px; border:2px solid rgba(0,0,0,0.12); border-top-color:#3498db; border-radius:50%; animation:ci-spin 1s linear infinite; display:none; margin-left:8px; }
+/* Spinner */
+.ci-spinner {
+	width: 16px;
+	height: 16px;
+	border: 2px solid rgba(52,152,219,0.25);
+	border-top-color: #3498db;
+	border-radius: 50%;
+	animation: ci-spin 1s linear infinite;
+	display: none;
+	margin-left: 8px;
+}
 @keyframes ci-spin { to { transform: rotate(360deg); } }
+#ci-edit-submit .ci-spinner { border: 2px solid rgba(52,152,219,0.25); border-top-color: #3498db; }
+#ci-edit-submit.ci-loading { background: transparent !important; box-shadow: none !important; }
+#ci-edit-submit.ci-loading .ci-edit-label { display: none !important; }
+#ci-edit-submit.ci-loading .ci-spinner { display: block !important; }
 
-/* Post-it styles */
-.ci-postit { position: fixed; z-index:2147483647; min-width:140px; max-width:320px; padding:8px; border-radius:8px; box-shadow:0 6px 18px rgba(0,0,0,0.15); color: #222; font-size:13px; line-height:1.3; }
-.ci-postit-header { display:flex; justify-content:space-between; align-items:center; font-weight:600; margin-bottom:6px; cursor:move; }
+/* Post-it notes */
+.ci-postit {
+	position: fixed;
+	z-index: 2147483647;
+	min-width: 140px;
+	max-width: 320px;
+	padding: 8px;
+	border-radius: 8px;
+	box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+	color: #222;
+	font-size: 13px;
+	line-height: 1.3;
+	font-family: var(--ci-font);
+}
+.ci-postit-header { display:flex; justify-content:space-between; align-items:center; font-weight:600; margin-bottom:6px; cursor:move; width:100%; }
+.ci-postit-title { font-size:14px; font-weight:700; }
 .ci-postit-close { background:transparent; border:none; font-size:16px; line-height:1; cursor:pointer; padding:2px 6px; }
 .ci-postit-body { white-space:pre-wrap; word-break:break-word; }
 
-/* Highlight class kept for compatibility but inline background colors are used to match notes */
-.ci-highlighted-text { /* no-op fallback; inline styles determine highlight color */ }
+/* Generic fade helper */
+.ci-fade { transition: opacity 200ms ease, transform 160ms ease; }
 
+/* Post-it dragging visual (slightly lift) */
+.ci-postit-dragging { transform: translateY(-6px); box-shadow: 0 10px 24px rgba(0,0,0,0.18); }

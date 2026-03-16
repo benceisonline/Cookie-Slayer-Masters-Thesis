@@ -39,14 +39,18 @@ export function createPostIt(text, targetEl, options = {}) {
         border: `1px solid ${pal.border}`,
         color: pal.fg,
         position: 'fixed',
+        maxWidth: '320px',
         zIndex: '2147483647',
         opacity: '0',
         transition: 'opacity 220ms ease'
     });
 
-    // Set Title
+    // Set Title (use a span so we can style it)
     const rawTitle = (options.title || '').toString().trim();
-    header.prepend(document.createTextNode(rawTitle || `Note ${state.count}`));
+    const titleSpan = document.createElement('span');
+    titleSpan.className = 'ci-postit-title';
+    titleSpan.textContent = rawTitle || `Note ${state.count}`;
+    header.prepend(titleSpan);
 
     // Create SVG Connector
     const svg = ensureConnectorSVG();
@@ -57,8 +61,19 @@ export function createPostIt(text, targetEl, options = {}) {
     line.setAttribute('id', id + '-line');
     svg.appendChild(line);
 
-    // Save to state
-    state.notes[id] = { note, line, targetEl, parentId: options.parentId || null };
+    // Save to state (capture original background so we can restore it)
+    const origBackground = (targetEl && targetEl.style) ? targetEl.style.background : '';
+    state.notes[id] = { note, line, targetEl, parentId: options.parentId || null, origBackground };
+
+    // Apply highlight to the target element using the same pastel background
+    if (targetEl && targetEl.style) {
+        try {
+            targetEl.setAttribute('data-ci-postit-id', id);
+            // apply with a smooth transition
+            targetEl.style.transition = (targetEl.style.transition || '') + ' background-color 220ms ease';
+            targetEl.style.background = pal.bg;
+        } catch (_) {}
+    }
 
     // Positioning Logic
     requestAnimationFrame(() => {
@@ -67,13 +82,96 @@ export function createPostIt(text, targetEl, options = {}) {
         updateConnector(id);
     });
 
-    // Event: Close
+    // Event: Close (fade out then remove)
     close.onclick = (e) => {
         e.stopPropagation();
-        note.remove();
-        line.remove();
-        delete state.notes[id];
+        const entry = state.notes[id];
+        // notify inspector that this post-it is being removed so it can hide overlays
+        try { document.dispatchEvent(new CustomEvent('ci-postit-removed', { detail: { id } })); } catch (_) {}
+        // restore highlighted element background if present and no other post-it highlights it
+        if (entry && entry.targetEl) {
+            try {
+                const target = entry.targetEl;
+                // check if any other note still references this same element
+                const others = Object.keys(window.__ci_postit_state.notes || {}).filter(k => k !== id);
+                let otherReferences = false;
+                for (const k of others) {
+                    const other = window.__ci_postit_state.notes[k];
+                    if (other && other.targetEl === target) { otherReferences = true; break; }
+                }
+                if (!otherReferences) {
+                    target.style.background = entry.origBackground || '';
+                    try { target.removeAttribute && target.removeAttribute('data-ci-postit-id'); } catch(_) {}
+                } else {
+                    // if data attr still points to this id, clear it to allow newer notes to take precedence
+                    try {
+                        if (target.getAttribute && target.getAttribute('data-ci-postit-id') === id) target.removeAttribute('data-ci-postit-id');
+                    } catch(_) {}
+                }
+            } catch (_) {}
+        }
+        // fade out
+        note.style.opacity = '0';
+        try { line.remove(); } catch(_) {}
+        setTimeout(() => {
+            try { note.remove(); } catch(_) {}
+            delete state.notes[id];
+            if (window.__ci_postit_state && window.__ci_postit_state.currentParent === id) {
+                window.__ci_postit_state.currentParent = null;
+            }
+        }, 220);
     };
+
+    // Make the whole note draggable at all times (excluding the close button)
+    note.style.cursor = 'move';
+    note.addEventListener('pointerdown', (e) => {
+        if (e.button && e.button !== 0) return; // only left-click
+        if (e.target.closest && e.target.closest('.ci-postit-close')) return; // ignore clicks on close
+        e.preventDefault();
+
+        const rect = note.getBoundingClientRect();
+        const startX = e.clientX;
+        const startY = e.clientY;
+        const offsetX = startX - rect.left;
+        const offsetY = startY - rect.top;
+        let started = false;
+
+        function startDrag(ev) {
+            started = true;
+            note.classList.add('ci-postit-dragging');
+            try { document.dispatchEvent(new CustomEvent('ci-postit-dragstart', { detail: { id } })); } catch (_) {}
+        }
+
+        function onMove(ev) {
+            ev.preventDefault();
+            const dx = ev.clientX - startX;
+            const dy = ev.clientY - startY;
+            const distSq = dx*dx + dy*dy;
+            if (!started && distSq > 36) { // 6px threshold
+                startDrag(ev);
+            }
+            if (started) {
+                note.style.left = `${ev.clientX - offsetX}px`;
+                note.style.top = `${ev.clientY - offsetY}px`;
+                updateConnector(id);
+            }
+        }
+
+        function onUp(ev) {
+            ev.preventDefault();
+            try { if (note.releasePointerCapture) note.releasePointerCapture(ev.pointerId); } catch (_e) {}
+            if (started) {
+                note.classList.remove('ci-postit-dragging');
+                try { document.dispatchEvent(new CustomEvent('ci-postit-dragend', { detail: { id } })); } catch (_) {}
+            }
+            window.removeEventListener('pointermove', onMove);
+            window.removeEventListener('pointerup', onUp);
+        }
+
+        try { if (note.setPointerCapture) note.setPointerCapture(e.pointerId); } catch (_e) {}
+        window.addEventListener('pointermove', onMove, { passive: false });
+        window.addEventListener('pointerup', onUp, { passive: false });
+    }, { passive: false });
 
     return id;
 }
@@ -102,6 +200,8 @@ export function appendFollowupToNote(parentId, text, userPrompt) {
 
     entry.note.appendChild(container);
     updateConnector(parentId);
+    // notify others (inspector) that the post-it size/content changed
+    try { document.dispatchEvent(new CustomEvent('ci-postit-updated', { detail: { id: parentId } })); } catch (_) {}
 }
 
 /**
@@ -129,8 +229,13 @@ export function updateConnector(id) {
 
 function positionNote(note, targetEl) {
     const tRect = targetEl.getBoundingClientRect();
-    note.style.left = `${tRect.right + 20}px`;
-    note.style.top = `${tRect.top}px`;
+    // Place the note above the target element when possible
+    const nRect = note.getBoundingClientRect();
+    const left = tRect.left + window.scrollX;
+    let top = tRect.top + window.scrollY - nRect.height - 12;
+    if (top < 8) top = tRect.bottom + window.scrollY + 12; // fallback below if not enough space
+    note.style.left = `${Math.max(8, left)}px`;
+    note.style.top = `${top}px`;
 }
 
 function randomPastel() {
