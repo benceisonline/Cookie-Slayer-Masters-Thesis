@@ -23,22 +23,135 @@ export function createOverlay() {
 export function createToggleButton(onClick) {
     const btn = document.createElement('button');
     btn.id = IDS.TOGGLE;
-    btn.textContent = 'Toggle Cookie Inspector';
+    btn.textContent = '🍪';
+    btn.title = 'CookieSlayer';
     Object.assign(btn.style, {
         position: 'fixed',
-        right: '14px',
+        right: '18px',
+        top: '18px',
+        zIndex: STYLES.Z_INDEX,
+        width: '50px',
+        height: '50px',
+        borderRadius: '50%',
+        border: '1px solid rgba(0,0,0,0.1)',
+        background: '#fff',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
+        cursor: 'grab',
+        fontSize: '36px',
+        lineHeight: '1',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '0',
+        userSelect: 'none'
+    });
+
+    let dragging = false;
+    let offsetX = 0;
+    let offsetY = 0;
+    let targetX = 0;
+    let targetY = 0;
+    let frameId = null;
+
+    btn.style.touchAction = 'none';
+
+    const applyPosition = () => {
+        btn.style.left = `${Math.max(4, Math.min(window.innerWidth - btn.offsetWidth - 4, targetX))}px`;
+        btn.style.top = `${Math.max(4, Math.min(window.innerHeight - btn.offsetHeight - 4, targetY))}px`;
+        btn.style.right = 'auto';
+        frameId = null;
+    };
+
+    const schedulePosition = () => {
+        if (frameId !== null) return;
+        frameId = requestAnimationFrame(applyPosition);
+    };
+
+    btn.addEventListener('pointerdown', (event) => {
+        event.preventDefault();
+        dragging = true;
+        btn.setPointerCapture(event.pointerId);
+        btn.style.cursor = 'grabbing';
+        offsetX = event.clientX - btn.getBoundingClientRect().left;
+        offsetY = event.clientY - btn.getBoundingClientRect().top;
+    });
+
+    btn.addEventListener('pointermove', (event) => {
+        if (!dragging) return;
+        targetX = event.clientX - offsetX;
+        targetY = event.clientY - offsetY;
+        schedulePosition();
+    });
+
+    btn.addEventListener('pointerup', (event) => {
+        if (!dragging) return;
+        dragging = false;
+        btn.style.cursor = 'grab';
+        btn.releasePointerCapture(event.pointerId);
+    });
+
+    btn.addEventListener('pointercancel', () => {
+        dragging = false;
+        btn.style.cursor = 'grab';
+    });
+    const setActive = (active) => {
+        if (active) {
+            btn.style.background = '#b8ef9e';
+            btn.style.color = '#fff';
+            btn.style.boxShadow = '0 0 0 rgba(0,0,0,0)';
+            btn.dataset.active = 'true';
+        } else {
+            btn.style.background = '#fff';
+            btn.style.color = '#000';
+            btn.style.boxShadow = '0 4px 8px rgba(0,0,0,0.12)';
+            btn.dataset.active = 'false';
+        }
+    };
+
+    setActive(false);
+
+    const infoButton = document.createElement('button');
+    infoButton.id = IDS.INFO_ICON;
+    infoButton.textContent = 'i';
+    Object.assign(infoButton.style, {
+        position: 'fixed',
+        right: '9px',
         top: '14px',
         zIndex: STYLES.Z_INDEX,
-        padding: '10px 14px',
-        minWidth: '180px',
-        borderRadius: '12px',
+        width: '18px',
+        height: '18px',
+        borderRadius: '50%',
+        border: '1px solid rgba(0,0,0,0.15)',
         background: '#fff',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+        color: '#333',
+        fontSize: '11px',
+        fontWeight: '700',
+        lineHeight: '1',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
         cursor: 'pointer',
-        fontWeight: '600'
+        boxShadow: '0 2px 4px rgba(0,0,0,0.12)',
+        padding: '0',
+        userSelect: 'none'
     });
-    btn.addEventListener('click', onClick, true);
+
+    infoButton.title = 'Open welcome page';
+    infoButton.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        window.postMessage({ action: 'show-welcome-overlay' }, '*');
+    });
+
+    btn.addEventListener('click', (event) => {
+        if (dragging) return;
+        const newActive = btn.dataset.active !== 'true';
+        setActive(newActive);
+        onClick(event, newActive);
+    }, true);
+
     document.documentElement.appendChild(btn);
+    document.documentElement.appendChild(infoButton);
 }
 
 export function createEditContainer() {
