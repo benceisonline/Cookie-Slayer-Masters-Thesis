@@ -86,6 +86,30 @@
 .ci-postit-close { background:transparent; border:none; font-size:16px; line-height:1; cursor:pointer; padding:2px 6px; }
 .ci-postit-body { white-space:pre-wrap; word-break:break-word; }
 
+/* Undo / Redo buttons (small, subtle) */
+.ci-postit-undo, .ci-postit-redo {
+	background: rgba(255,255,255,0.6);
+	border: 1px solid rgba(0,0,0,0.06);
+	color: rgba(0,0,0,0.65);
+	width: 26px;
+	height: 26px;
+	padding: 0;
+	margin-right: 6px;
+	border-radius: 6px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 13px;
+	cursor: pointer;
+	transition: background 160ms ease, transform 120ms ease, opacity 160ms ease;
+}
+.ci-postit-undo:hover, .ci-postit-redo:hover { background: rgba(255,255,255,0.9); transform: translateY(-1px); }
+.ci-postit-undo:disabled, .ci-postit-redo:disabled { opacity: 0.45; cursor: default; }
+
+/* Fade animation for body text changes */
+.ci-postit-body.ci-body-fade { opacity: 0; transform: translateY(-4px); transition: opacity 160ms ease, transform 160ms ease; }
+.ci-postit-body { transition: opacity 160ms ease, transform 160ms ease; }
+
 /* Generic fade helper */
 .ci-fade { transition: opacity 200ms ease, transform 160ms ease; }
 
