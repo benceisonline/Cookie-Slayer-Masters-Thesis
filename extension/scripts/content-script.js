@@ -1,4 +1,5 @@
 import { loadInspectorTool } from "./inspector-tool/inspector.js"; 
+import { initProfile } from "./profile/profile.js";
 import { startScanner } from "./scraper/scraper.js"
 
 // Inject extension stylesheet into the page so UI elements pick up styles
@@ -37,16 +38,7 @@ function showWelcomeOverlay() {
     });
 }
 
-// Global variables
-let results = [];
-let hasMadeDecision = false;
-
-// Start scanner once page loads and only show the welcome overlay
-// when the user hasn't already completed the welcome flow. This
-// prevents the welcome from opening on every page navigation while
-// still showing it the first time the extension runs.
 if (document.readyState === 'complete') {
-    results = startScanner();
     chrome.storage && chrome.storage.local && chrome.storage.local.get(['welcomeSeen'], (res) => {
         try {
             if (!res || !res.welcomeSeen) showWelcomeOverlay();
@@ -54,7 +46,6 @@ if (document.readyState === 'complete') {
     });
 } else {
     window.addEventListener('load', () => {
-        results = startScanner();
         chrome.storage && chrome.storage.local && chrome.storage.local.get(['welcomeSeen'], (res) => {
             try {
                 if (!res || !res.welcomeSeen) showWelcomeOverlay();
@@ -69,3 +60,24 @@ window.addEventListener('message', (event) => {
 });
 
 loadInspectorTool();
+
+let hasMadeDecision = false;
+
+async function startApp() {
+    let results;
+
+    if (document.readyState === 'complete') {
+        results = await startScanner();
+    } else {
+        results = await new Promise(resolve => {
+            window.addEventListener('load', async () => {
+                const data = await startScanner();
+                resolve(data);
+            });
+        });
+    }
+
+    await initProfile(results);
+}
+
+startApp()

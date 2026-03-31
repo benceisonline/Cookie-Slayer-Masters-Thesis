@@ -11,8 +11,8 @@ chrome.runtime.onInstalled.addListener(() => {
 });
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-  if (!msg || msg.action !== 'ask' || !msg.prompt) return;
-  const url = 'http://130.225.39.167:3000/ask';
+  if (!msg || (msg.action !== 'ask' && msg.action !== 'categorize') || !msg.prompt) return;
+  const url = `http://130.225.39.167:3000/${msg.action}`;
   fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
