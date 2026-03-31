@@ -10,10 +10,10 @@ let hideTimeout = null;
 
 function categoriseWebsite() {
   return new Promise((resolve) => {
-    const prompt = `${document.title}`;
+    const prompt = document.title;
     chrome.runtime.sendMessage({ action: 'categorize', prompt }, response => {
       if (response && response.ok) {
-        resolve(sanitizeServerText(response.text));
+        resolve(sanitizeServerText(response.text).toUpperCase());
       } else {
         resolve(""); // TODO: add error message in either the extension pop up quickly, reuse for when we dont place any also
       }

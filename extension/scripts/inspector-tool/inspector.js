@@ -42,6 +42,26 @@ function init() {
     document.addEventListener('ci-postit-dragend', handlePostitDragEnd);
     document.addEventListener('ci-postit-updated', handlePostitUpdated);
     document.addEventListener('ci-postit-removed', handlePostitRemoved);
+    // When a post-it is first created, ensure overlay/edit UI repositions
+    document.addEventListener('ci-postit-created', (e) => {
+        const id = e && e.detail && e.detail.id;
+        if (!id) return;
+        const note = document.getElementById(id);
+        if (!note) return;
+        // Only act when inspector is active and the inspector is targeting this note or parent state refers to it
+        if (!active) return;
+        const isTarget = (selectedTargetElement === note) || (selectedTargetElement && selectedTargetElement.getAttribute && selectedTargetElement.getAttribute('data-ci-id') === id);
+        const isCurrentParent = (window.__ci_postit_state && window.__ci_postit_state.currentParent === id);
+        if (isTarget || isCurrentParent) {
+            setTimeout(() => {
+                try { showOverlayFor(note); } catch(_) {}
+                try {
+                    const edit = document.getElementById(IDS.EDIT_CONTAINER);
+                    if (edit && edit.style && edit.style.display !== 'none') openEditUI(null, null, note);
+                } catch(_) {}
+            }, 20);
+        }
+    });
 }
 
 // Argument e is the DOM event object
@@ -59,8 +79,11 @@ function handleSuggestionDropped(e) {
     const y = d.y || 0;
 
     // Element at drop point
-    const el = document.elementFromPoint(x, y);
+    let el = document.elementFromPoint(x, y);
     if (!el) return;
+
+    // If the drop landed on a post-it child, treat the whole post-it as the target
+    try { const p = el.closest && el.closest('.ci-postit'); if (p) el = p; } catch (_) {}
 
     // Ignore drops on internal UI
     if (isInternalUI(el)) return;
@@ -68,6 +91,15 @@ function handleSuggestionDropped(e) {
     // behave as if the user selected this element with the inspector
     selectedElement = el;
     selectedTargetElement = el;
+    // hide any lingering drag overlay (dashed rectangle)
+    try {
+        const dragOverlay = document.getElementById('ci-drag-overlay');
+        if (dragOverlay) {
+            dragOverlay.style.opacity = '0';
+            dragOverlay.style.transform = 'scale(1)';
+            setTimeout(() => { try { dragOverlay.style.display = 'none'; } catch(_) {} }, 200);
+        }
+    } catch (_) {}
     // If the drop occurred on a post-it, set that post-it as the current parent
     // so the form submit will create a follow-up attached to the note.
     if (window.__ci_postit_state) {
@@ -236,6 +268,8 @@ function onMouseMove(e) {
 function onClickCapture(e) {
     // If the post-it close button was clicked, allow the event to proceed so the close handler runs
     if (e.target && e.target.closest && e.target.closest('.ci-postit-close')) return;
+    // Allow undo/redo buttons on the post-it to receive their events
+    if (e.target && e.target.closest && (e.target.closest('.ci-postit-undo') || e.target.closest('.ci-postit-redo'))) return;
 
     // If a post-it was clicked, treat it as the selection: open prompt above it
     const postit = e.target.closest && e.target.closest('.ci-postit');
@@ -350,11 +384,39 @@ function openEditUI(x, y, el) {
         const cH = container.offsetHeight || 56;
         left = rect.left + (rect.width - cW) / 2;
 
-        // Position above element
-        top = rect.top - cH - 8;
+        // Try to position above the element first
+        const topAbove = rect.top - cH - 8;
+        if (topAbove >= margin) {
+            top = topAbove;
+        } else {
+            // Not enough room above. Prefer placing the popup to the side
+            // Choose side by available horizontal space (right vs left)
+            const spaceRight = vw - (rect.right + 8);
+            const spaceLeft = rect.left - 8;
+            const preferRight = spaceRight >= spaceLeft;
 
-        // If not enough room above, overlap the top edge of the element instead
-        if (top < margin) top = Math.max(margin, rect.top);
+            // Vertical center relative to the element
+            const centeredTop = rect.top + (rect.height - cH) / 2;
+
+            if (preferRight && spaceRight >= cW + margin) {
+                // place to the right
+                left = rect.right + 8;
+                top = centeredTop;
+            } else if (!preferRight && spaceLeft >= cW + margin) {
+                // place to the left
+                left = rect.left - cW - 8;
+                top = centeredTop;
+            } else if (spaceRight >= cW + margin) {
+                left = rect.right + 8;
+                top = centeredTop;
+            } else if (spaceLeft >= cW + margin) {
+                left = rect.left - cW - 8;
+                top = centeredTop;
+            } else {
+                // Fallback: overlap the element (previous behavior)
+                top = Math.max(margin, rect.top);
+            }
+        }
     } else {
 
         // x,y are client coordinates; position relative to click

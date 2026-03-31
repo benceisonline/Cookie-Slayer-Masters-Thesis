@@ -19,9 +19,49 @@ import { startScanner } from "./scraper/scraper.js"
     }
 })();
 
-let hasMadeDecision = false;
+function showWelcomeOverlay() {
+    if (document.getElementById('cs-welcome-overlay')) return;
+
+    const overlay = document.createElement('div');
+    overlay.id = 'cs-welcome-overlay';
+    overlay.className = 'cs-welcome-overlay';
+
+    overlay.innerHTML = `<iframe src="${chrome.runtime.getURL('welcome.html')}" style="width:100%; height:100%; border:none;"></iframe>`;
+
+    document.body.appendChild(overlay);
+
+    // Listen for messages from the iframe to close the overlay
+    window.addEventListener('message', (event) => {
+        if (event.data.type === 'close-welcome') {
+            overlay.remove();
+        }
+    });
+}
+
+if (document.readyState === 'complete') {
+    chrome.storage && chrome.storage.local && chrome.storage.local.get(['welcomeSeen'], (res) => {
+        try {
+            if (!res || !res.welcomeSeen) showWelcomeOverlay();
+        } catch (_) { /* ignore */ }
+    });
+} else {
+    window.addEventListener('load', () => {
+        chrome.storage && chrome.storage.local && chrome.storage.local.get(['welcomeSeen'], (res) => {
+            try {
+                if (!res || !res.welcomeSeen) showWelcomeOverlay();
+            } catch (_) { /* ignore */ }
+        });
+    });
+}
+
+window.addEventListener('message', (event) => {
+    if (!event.data || event.data.action !== 'show-welcome-overlay') return;
+    showWelcomeOverlay();
+});
 
 loadInspectorTool();
+
+let hasMadeDecision = false;
 
 async function startApp() {
     let results;

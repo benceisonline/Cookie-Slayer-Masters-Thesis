@@ -3,9 +3,16 @@
 //      -H "Content-Type: application/json" \
 //      -d '{"prompt": "Explain what a neural network is."}'
 
+// Open welcome page on every reload (for testing)
+chrome.runtime.onInstalled.addListener(() => {
+  chrome.tabs.create({
+    url: chrome.runtime.getURL('welcome.html')
+  });
+});
+
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-  if (!msg || msg.action !== 'ask' || !msg.prompt) return;
-  const url = 'http://130.225.39.167:3000/ask';
+  if (!msg || (msg.action !== 'ask' && msg.action !== 'categorize') || !msg.prompt) return;
+  const url = `http://130.225.39.167:3000/${msg.action}`;
   fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
