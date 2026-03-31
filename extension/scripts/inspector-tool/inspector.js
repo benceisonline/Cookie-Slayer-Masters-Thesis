@@ -79,8 +79,11 @@ function handleSuggestionDropped(e) {
     const y = d.y || 0;
 
     // Element at drop point
-    const el = document.elementFromPoint(x, y);
+    let el = document.elementFromPoint(x, y);
     if (!el) return;
+
+    // If the drop landed on a post-it child, treat the whole post-it as the target
+    try { const p = el.closest && el.closest('.ci-postit'); if (p) el = p; } catch (_) {}
 
     // Ignore drops on internal UI
     if (isInternalUI(el)) return;

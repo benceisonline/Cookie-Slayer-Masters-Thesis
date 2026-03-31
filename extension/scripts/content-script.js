@@ -41,13 +41,25 @@ function showWelcomeOverlay() {
 let results = [];
 let hasMadeDecision = false;
 
+// Start scanner once page loads and only show the welcome overlay
+// when the user hasn't already completed the welcome flow. This
+// prevents the welcome from opening on every page navigation while
+// still showing it the first time the extension runs.
 if (document.readyState === 'complete') {
     results = startScanner();
-    showWelcomeOverlay();
+    chrome.storage && chrome.storage.local && chrome.storage.local.get(['welcomeSeen'], (res) => {
+        try {
+            if (!res || !res.welcomeSeen) showWelcomeOverlay();
+        } catch (_) { /* ignore */ }
+    });
 } else {
     window.addEventListener('load', () => {
         results = startScanner();
-        showWelcomeOverlay();
+        chrome.storage && chrome.storage.local && chrome.storage.local.get(['welcomeSeen'], (res) => {
+            try {
+                if (!res || !res.welcomeSeen) showWelcomeOverlay();
+            } catch (_) { /* ignore */ }
+        });
     });
 }
 

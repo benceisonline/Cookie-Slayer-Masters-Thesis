@@ -28,6 +28,7 @@ export const PATTERNS = {
 export const IDS = {
     OVERLAY: 'inspector-overlay',
     TOGGLE: 'inspector-toggle',
+    INFO_ICON: 'inspector-info',
     EDIT_CONTAINER: 'prompt-input',
     EDIT_FORM: 'prompt-form',
     EDIT_INPUT: 'prompt-input-field',

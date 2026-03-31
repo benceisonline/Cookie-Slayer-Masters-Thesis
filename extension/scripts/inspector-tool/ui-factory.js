@@ -554,12 +554,15 @@ export function createEditContainer() {
                 const y = ev.clientY || 0;
                 const el = document.elementFromPoint(x, y);
                 if (!el) return;
+                // If the pointer is over a post-it child, target the whole post-it
+                const postit = (el && el.closest) ? el.closest('.ci-postit') : null;
+                const targetEl = postit || el;
                 // don't highlight our own UI
-                if (el.closest && (el.closest(`#${IDS.EDIT_CONTAINER}`) || el.closest(`#${IDS.OVERLAY}`) || el.closest(`#${IDS.TOGGLE}`))) {
+                if (targetEl.closest && (targetEl.closest(`#${IDS.EDIT_CONTAINER}`) || targetEl.closest(`#${IDS.OVERLAY}`) || targetEl.closest(`#${IDS.TOGGLE}`))) {
                     hideDragOverlay();
                     return;
                 }
-                showDragOverlayFor(el);
+                showDragOverlayFor(targetEl);
             } catch (_) {}
         }, true);
 
@@ -575,7 +578,10 @@ export function createEditContainer() {
                 const x = pos.x || 0, y = pos.y || 0;
                 const el = document.elementFromPoint(x, y);
                 if (!el) return;
-                if (el.closest && (el.closest(`#${IDS.EDIT_CONTAINER}`) || el.closest(`#${IDS.OVERLAY}`) || el.closest(`#${IDS.TOGGLE}`))) return;
+                // Prefer the whole post-it if dropping on one of its sub-elements
+                const postit = (el && el.closest) ? el.closest('.ci-postit') : null;
+                const targetEl = postit || el;
+                if (targetEl.closest && (targetEl.closest(`#${IDS.EDIT_CONTAINER}`) || targetEl.closest(`#${IDS.OVERLAY}`) || targetEl.closest(`#${IDS.TOGGLE}`))) return;
                 const text = dragged.getAttribute('data-suggestion') || dragged.textContent || '';
                 if (!text) return;
                 const detail = { text, x, y };

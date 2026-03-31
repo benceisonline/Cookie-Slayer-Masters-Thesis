@@ -4,8 +4,8 @@ if (!window.__ci_postit_state) {
 }
 
 // Scroll handling: hide connector lines when user scrolls a small distance
-if (!window.__ci_postit_scroll_state) {
-    window.__ci_postit_scroll_state = { lastY: (window.scrollY || window.pageYOffset || 0), acc: 0, timer: null, hidden: false };
+    if (!window.__ci_postit_scroll_state) {
+    window.__ci_postit_scroll_state = { lastY: (window.scrollY || window.pageYOffset || 0), acc: 0, timer: null, hidden: false, rafPending: false };
 
     const SCROLL_HIDE_THRESHOLD = 30; // pixels
     const SCROLL_RESET_MS = 500; // accumulation window
@@ -18,43 +18,183 @@ if (!window.__ci_postit_scroll_state) {
                 const e = notes[k];
                 try {
                     if (e && e.line) {
-                        // ensure transition exists, then fade opacity to 0
+                        // ensure visible and transition exists
+                        try { e.line.style.display = 'block'; } catch(_) {}
                         try { e.line.style.transition = e.line.style.transition || 'opacity 220ms ease'; } catch(_) {}
+                        // force reflow so the transition runs reliably
+                        try { void e.line.offsetWidth; } catch(_) {}
+                        // fade out
                         try { e.line.style.opacity = '0'; } catch(_) {}
                         // after fade complete, hide from layout
                         setTimeout(() => { try { e.line.style.display = 'none'; } catch(_) {} }, 220);
                     }
                 } catch(_) {}
             });
-            window.__ci_postit_scroll_state.hidden = true;
+            // mark as in-scrolling state so created lines respect hidden state
+            window.__ci_postit_scroll_state.scrolling = true;
+        } catch (_) {}
+    }
+
+    function showAllConnectors() {
+        try {
+            const notes = window.__ci_postit_state && window.__ci_postit_state.notes;
+            if (!notes) return;
+            Object.keys(notes).forEach(k => {
+                const e = notes[k];
+                try {
+                    if (e && e.line) {
+                        try { e.line.style.display = 'block'; } catch(_) {}
+                    }
+                } catch(_) {}
+            });
+            // Force reflow then fade opacity in
+            requestAnimationFrame(() => {
+                try {
+                    Object.keys(notes).forEach(k => {
+                        const e = notes[k];
+                        try { if (e && e.line) { e.line.style.transition = e.line.style.transition || 'opacity 220ms ease'; e.line.style.opacity = '1'; } } catch(_) {}
+                    });
+                } catch(_) {}
+            });
+            window.__ci_postit_scroll_state.scrolling = false;
         } catch (_) {}
     }
 
     function onPageScroll() {
         try {
-            if (window.__ci_postit_scroll_state.hidden) return;
             const cur = (window.scrollY || window.pageYOffset || 0);
             const delta = Math.abs(cur - window.__ci_postit_scroll_state.lastY);
             window.__ci_postit_scroll_state.lastY = cur;
             window.__ci_postit_scroll_state.acc += delta;
 
-            if (window.__ci_postit_scroll_state.acc >= SCROLL_HIDE_THRESHOLD) {
-                hideAllConnectors();
-                // clear accumulator and timer
-                window.__ci_postit_scroll_state.acc = 0;
-                if (window.__ci_postit_scroll_state.timer) { clearTimeout(window.__ci_postit_scroll_state.timer); window.__ci_postit_scroll_state.timer = null; }
-                return;
-            }
+            // If this is the start of a scroll, hide connectors immediately
+            try {
+                if (!window.__ci_postit_scroll_state.scrolling) {
+                    hideAllConnectors();
+                }
+            } catch(_) {}
 
-            // reset accumulation after a short idle
+            // While scrolling, schedule connector position updates via RAF
+            try {
+                if (!window.__ci_postit_scroll_state.rafPending) {
+                    window.__ci_postit_scroll_state.rafPending = true;
+                    requestAnimationFrame(() => {
+                        try {
+                            window.__ci_postit_scroll_state.rafPending = false;
+                            const notes = window.__ci_postit_state && window.__ci_postit_state.notes;
+                            if (!notes) return;
+                            Object.keys(notes).forEach(k => {
+                                try { updateConnector(k); } catch(_) {}
+                            });
+                        } catch(_) { window.__ci_postit_scroll_state.rafPending = false; }
+                    });
+                }
+            } catch(_) {}
+
+            // reset accumulation after a short idle — when idle, perform a
+            // final update and reveal connectors in their correct positions
             if (window.__ci_postit_scroll_state.timer) clearTimeout(window.__ci_postit_scroll_state.timer);
-            window.__ci_postit_scroll_state.timer = setTimeout(() => { window.__ci_postit_scroll_state.acc = 0; window.__ci_postit_scroll_state.timer = null; }, SCROLL_RESET_MS);
+            window.__ci_postit_scroll_state.timer = setTimeout(() => {
+                window.__ci_postit_scroll_state.acc = 0;
+                window.__ci_postit_scroll_state.timer = null;
+                try {
+                    // Final layout sync then reveal
+                    requestAnimationFrame(() => {
+                        try {
+                            const notes = window.__ci_postit_state && window.__ci_postit_state.notes;
+                            if (!notes) {
+                                window.__ci_postit_scroll_state.scrolling = false;
+                                return;
+                            }
+                            Object.keys(notes).forEach(k => { try { updateConnector(k); } catch(_) {} });
+                            showAllConnectors();
+                        } catch(_) { window.__ci_postit_scroll_state.scrolling = false; }
+                    });
+                } catch(_) { window.__ci_postit_scroll_state.scrolling = false; }
+            }, SCROLL_RESET_MS);
         } catch (_) {}
     }
 
     try {
         window.addEventListener && window.addEventListener('scroll', onPageScroll, { passive: true });
     } catch (_) {}
+
+    // Also listen for wheel/touch/key interactions which may scroll
+    // nested panels (cookie popups) so connectors fade out during the
+    // interaction and reappear after recalculation.
+    try {
+        const onInteractionForScroll = (ev) => {
+            try {
+                if (!window.__ci_postit_scroll_state.scrolling) hideAllConnectors();
+
+                if (!window.__ci_postit_scroll_state.rafPending) {
+                    window.__ci_postit_scroll_state.rafPending = true;
+                    requestAnimationFrame(() => {
+                        try {
+                            window.__ci_postit_scroll_state.rafPending = false;
+                            const notes = window.__ci_postit_state && window.__ci_postit_state.notes;
+                            if (!notes) return;
+                            Object.keys(notes).forEach(k => { try { updateConnector(k); } catch(_) {} });
+                        } catch(_) { window.__ci_postit_scroll_state.rafPending = false; }
+                    });
+                }
+
+                if (window.__ci_postit_scroll_state.timer) clearTimeout(window.__ci_postit_scroll_state.timer);
+                window.__ci_postit_scroll_state.timer = setTimeout(() => {
+                    try { const notes = window.__ci_postit_state && window.__ci_postit_state.notes; if (notes) Object.keys(notes).forEach(k => { try { updateConnector(k); } catch(_) {} }); showAllConnectors(); } catch(_) {}
+                    try { window.__ci_postit_scroll_state.timer = null; } catch(_) {}
+                }, SCROLL_RESET_MS);
+            } catch(_) {}
+        };
+
+        document.addEventListener && document.addEventListener('wheel', onInteractionForScroll, { passive: true, capture: true });
+        document.addEventListener && document.addEventListener('touchmove', onInteractionForScroll, { passive: true, capture: true });
+        document.addEventListener && document.addEventListener('keydown', (ev) => {
+            try {
+                const keys = ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','PageUp','PageDown','Home','End',' '];
+                if (keys.indexOf(ev.key) !== -1) onInteractionForScroll(ev);
+            } catch(_) {}
+        }, { passive: true, capture: true });
+    } catch (_) {}
+
+// Also update connectors on resize/orientation changes so lines remain aligned
+try {
+    window.addEventListener && window.addEventListener('resize', () => {
+        try {
+            if (window.__ci_postit_state && window.__ci_postit_state.notes) {
+                Object.keys(window.__ci_postit_state.notes).forEach(k => { try { updateConnector(k); } catch(_) {} });
+            }
+        } catch (_) {}
+    }, { passive: true });
+    window.addEventListener && window.addEventListener('orientationchange', () => {
+        try { if (window.__ci_postit_state && window.__ci_postit_state.notes) Object.keys(window.__ci_postit_state.notes).forEach(k => { try { updateConnector(k); } catch(_) {} }); } catch(_) {}
+    }, { passive: true });
+} catch (_) {}
+
+// Watch for DOM mutations that may affect layout (e.g., cookie popups,
+// embedded panels). Throttle updates with RAF so connectors stay in sync
+// without overwhelming the main thread.
+try {
+    if (!window.__ci_postit_mutation_observer) {
+        const mo = new MutationObserver((mutations) => {
+            try {
+                if (!window.__ci_postit_scroll_state.rafPending) {
+                    window.__ci_postit_scroll_state.rafPending = true;
+                    requestAnimationFrame(() => {
+                        try {
+                            window.__ci_postit_scroll_state.rafPending = false;
+                            const notes = window.__ci_postit_state && window.__ci_postit_state.notes;
+                            if (!notes) return;
+                            Object.keys(notes).forEach(k => { try { updateConnector(k); } catch(_) {} });
+                        } catch(_) { window.__ci_postit_scroll_state.rafPending = false; }
+                    });
+                }
+            } catch(_) {}
+        });
+        try { mo.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['style','class','hidden'] }); } catch(_) {}
+        window.__ci_postit_mutation_observer = mo;
+    }
+} catch (_) {}
 }
 
 /**
@@ -136,8 +276,8 @@ export function createPostIt(text, targetEl, options = {}) {
     try {
         line.style.opacity = '1';
         line.style.transition = line.style.transition || 'opacity 220ms ease';
-        if (window.__ci_postit_scroll_state && window.__ci_postit_scroll_state.hidden) {
-            // already hidden due to recent scroll - keep hidden
+        if (window.__ci_postit_scroll_state && window.__ci_postit_scroll_state.scrolling) {
+            // already in scrolling state - keep hidden until scroll settles
             line.style.opacity = '0';
             setTimeout(() => { try { line.style.display = 'none'; } catch(_) {} }, 220);
         }
@@ -149,6 +289,19 @@ export function createPostIt(text, targetEl, options = {}) {
     state.notes[id] = { note, line, targetEl, parentId: options.parentId || null, origBackground,
         bodyEl: body, history: [body.innerHTML], historyIndex: 0, followupCount: 0,
         undoBtn, redoBtn };
+
+    // Attach a ResizeObserver to the target and the note so connector lines
+    // update when element sizes change (helpful for overlays and popup panels).
+    try {
+        const roCb = () => { try { updateConnector(id); } catch(_) {} };
+        const RO = window.ResizeObserver;
+        if (RO) {
+            const ro = new RO((entries) => { try { roCb(); } catch(_) {} });
+            try { if (targetEl && targetEl.nodeType === 1) ro.observe(targetEl); } catch(_) {}
+            try { ro.observe(note); } catch(_) {}
+            state.notes[id].resizeObserver = ro;
+        }
+    } catch (_) {}
 
     // Wire up undo/redo button behavior
     try {
@@ -212,6 +365,7 @@ export function createPostIt(text, targetEl, options = {}) {
         try { line.remove(); } catch(_) {}
         setTimeout(() => {
             try { note.remove(); } catch(_) {}
+            try { const entry = state.notes[id]; if (entry && entry.resizeObserver) entry.resizeObserver.disconnect(); } catch(_) {}
             delete state.notes[id];
             if (window.__ci_postit_state && window.__ci_postit_state.currentParent === id) {
                 window.__ci_postit_state.currentParent = null;
