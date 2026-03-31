@@ -1,4 +1,5 @@
 import { loadInspectorTool } from "./inspector-tool/inspector.js"; 
+import { initProfile } from "./profile/profile.js";
 import { startScanner } from "./scraper/scraper.js"
 
 // Inject extension stylesheet into the page so UI elements pick up styles
@@ -18,16 +19,25 @@ import { startScanner } from "./scraper/scraper.js"
     }
 })();
 
-// Global variables
-let results = [];
 let hasMadeDecision = false;
 
-if (document.readyState === 'complete') {
-    results = startScanner();
-} else {
-    window.addEventListener('load', () => {
-        results = startScanner();
-    });
+loadInspectorTool();
+
+async function startApp() {
+    let results;
+
+    if (document.readyState === 'complete') {
+        results = await startScanner();
+    } else {
+        results = await new Promise(resolve => {
+            window.addEventListener('load', async () => {
+                const data = await startScanner();
+                resolve(data);
+            });
+        });
+    }
+
+    await initProfile(results);
 }
 
-loadInspectorTool();
+startApp()

@@ -1,4 +1,4 @@
-import { IDS, STYLES } from '../types.js';
+import { IDS, STYLES } from '../common/types.js';
 
 // Create the main inspector overlay element.
 // Returns a fixed-position div used to draw a highlighted rectangle

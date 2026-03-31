@@ -1,6 +1,6 @@
-import { IDS, CLASSES } from '../types.js';
+import { IDS, CLASSES } from '../common/types.js';
 import { createOverlay, createToggleButton, createEditContainer, injectUiAnimations } from './ui-factory.js';
-import { adjustTextareaHeight, sanitizeServerText } from './utils.js';
+import { adjustTextareaHeight, sanitizeServerText } from '../common/utils.js';
 import { createPostIt, appendFollowupToNote } from './postits.js';
 
 let active = false;
@@ -483,7 +483,7 @@ function setupFormLogic() {
 // title and the user's question to give the server useful context.
 function constructPrompt(el, query) {
     const text = el.innerText || el.value || 'Selected element';
-    return `Context: Website "${document.title}". I am is looking at this element when trying to make an online privacy decision: "${text.substring(0, 500)}". Question: ${query}`;
+    return `Context: Website "${document.title}". I am looking at this element when trying to make an online privacy decision: "${text.substring(0, 500)}". Question: ${query}`;
 }
 
 // Temporarily change the overlay border color to provide a short
