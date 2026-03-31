@@ -10,10 +10,8 @@ let hideTimeout = null;
 
 function categoriseWebsite() {
   return new Promise((resolve) => {
-    const categoryList = Object.keys(WEBSITE_CATEGORIES).join(', ');
-    // TODO: move this into backend and just send the website name and types and create a new func
-    const prompt = `The website is "${document.title}". Return one of these categories based on what fits the website the most: "${categoryList}". Return a single word ONLY.`;
-    chrome.runtime.sendMessage({ action: 'ask', prompt }, response => {
+    const prompt = `${document.title}`;
+    chrome.runtime.sendMessage({ action: 'categorize', prompt }, response => {
       if (response && response.ok) {
         resolve(sanitizeServerText(response.text));
       } else {
