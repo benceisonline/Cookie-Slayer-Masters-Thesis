@@ -141,7 +141,7 @@ app.post('/categorize', limiter, async (req, res) => {
     // Normalize the model output to one of the allowed categories if possible
     const raw = response && response.response ? response.response : '';
     const category = extractCategory(typeof raw === 'string' ? raw : JSON.stringify(raw));
-    res.json({ category });
+    res.json({ response: category });
   } catch (error) {
     res.status(500).json({ error: `Ollama Error: ${error.message}` });
   }
