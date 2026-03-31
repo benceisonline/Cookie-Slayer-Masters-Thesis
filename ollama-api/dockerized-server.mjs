@@ -3,7 +3,24 @@ import { rateLimit } from 'express-rate-limit';
 import { Ollama } from 'ollama'; // Import the constructor
 
 const app = express();
-app.use(express.json());
+
+// Capture raw body for fallback parsing/debugging. Use raw parser to avoid
+// express.json throwing on invalid JSON (e.g. unescaped control chars).
+app.use(express.raw({ type: '*/*', limit: '1mb', verify: (req, res, buf) => {
+  try { req.rawBody = buf && buf.toString(); } catch (_) { req.rawBody = undefined; }
+} }));
+
+// Helper to sanitize incoming prompts into plain text
+function sanitizePrompt(s) {
+  if (typeof s !== 'string') s = String(s || '');
+  // Remove control chars except common whitespace, then normalize whitespace
+  s = s.replace(/[\x00-\x09\x0B\x0C\x0E-\x1F\x7F]+/g, ' ');
+  // Replace any remaining newlines/tabs with a single space
+  s = s.replace(/[\r\n\t]+/g, ' ');
+  // Collapse multiple whitespace into single space and trim
+  s = s.replace(/\s+/g, ' ').trim();
+  return s;
+}
 
 // Initialize the client pointing to the Docker service name (read from env)
 const ollama = new Ollama({ host: process.env.OLLAMA_HOST || 'http://ollama:11434' });
@@ -23,7 +40,7 @@ const promptModifiers = [
 
 // Categorization modifiers: return only one of the listed categories
 const categorizeModifiers = [
-  'You have the following options: "Shopping", "Social", "Entertainment", "Productivity", "Health", "Finance", "Government". Reply with exactly one of these options with no additional text.'
+  'You have the following options: "Shopping", "Social", "Entertainment", "Productivity", "Health", "Finance", "Government". Reply with exactly one of these options that is most fitting for this website with no additional text.'
 ];
 
 // Allowed categories and helper to extract one from model output
@@ -60,8 +77,23 @@ function extractCategory(rawText) {
 }
 
 app.post('/ask', limiter, async (req, res) => {
-  const { prompt } = req.body;
+  // Extract prompt: try JSON parse of raw body, otherwise use raw text
+  let prompt = undefined;
+  const raw = typeof req.rawBody === 'string' ? req.rawBody : (Buffer.isBuffer(req.body) ? req.body.toString() : undefined);
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed.prompt === 'string') prompt = parsed.prompt;
+    } catch (_) {
+      // invalid JSON — fall back to raw text
+    }
+    if (!prompt) prompt = raw;
+  }
+
   if (!prompt) return res.status(400).json({ error: "Prompt is required" });
+
+  // Sanitize incoming prompt to plain text
+  prompt = sanitizePrompt(prompt);
 
   const finalPrompt = `${prompt}\n\n[Instructions: ${promptModifiers.join(" ")}]`;
 
@@ -80,8 +112,23 @@ app.post('/ask', limiter, async (req, res) => {
 
 // New endpoint: categorize a prompt into one of the predefined categories
 app.post('/categorize', limiter, async (req, res) => {
-  const { prompt } = req.body;
+  // Extract prompt: try JSON parse of raw body, otherwise use raw text
+  let prompt = undefined;
+  const raw = typeof req.rawBody === 'string' ? req.rawBody : (Buffer.isBuffer(req.body) ? req.body.toString() : undefined);
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed.prompt === 'string') prompt = parsed.prompt;
+    } catch (_) {
+      // invalid JSON — fall back to raw text
+    }
+    if (!prompt) prompt = raw;
+  }
+
   if (!prompt) return res.status(400).json({ error: "Prompt is required" });
+
+  // Sanitize incoming prompt to plain text
+  prompt = sanitizePrompt(prompt);
 
   const finalPrompt = `${prompt}\n\n[Instructions: ${categorizeModifiers.join(' ')}]`;
 
