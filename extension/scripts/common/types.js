@@ -12,17 +12,17 @@ export const SCAN_CONFIG = {
 };
 
 export const DECISIONS = {
-    ACCEPT: {action: 'ACCEPT', value: 3},
-    REJECT: {action: 'REJECT', value: 2},
-    NECESSARY: {action: 'NECESSARY', value: 1},
-    PREFERENCES: {action: 'PREFERENCES', value: 0}
+    ACCEPT: 'ACCEPT',
+    REJECT: 'REJECT',
+    NECESSARY: 'NECESSARY',
+    CUSTOMIZE: 'CUSTOMIZE',
 };
 
 export const COORDINATES = {
     ACCEPT: { x: 1, y: 1 },
     REJECT: { x: -1, y: -1 },
     NECESSARY: { x: -1, y: 1 },
-    PREFERENCES: { x: 1, y: -1 }
+    CUSTOMIZE: { x: 1, y: -1 }
 };
 
 export const WEBSITE_CATEGORIES = {
@@ -30,15 +30,20 @@ export const WEBSITE_CATEGORIES = {
     SHOPPING: 'SHOPPING',
     FINANCE: 'FINANCE',
     GOVERMENT: 'GOVERMENT',
+    HEALTH: 'HEALTH'
 };
 
 export const DEFAULT = {
     DEFAULT: 'DEFAULT'
 }
 
+export const VAL = {
+    MIN_VALUE: 0.1
+}
+
 export const PATTERNS = {
     necessary: /(?=(.*(accept|agree|allow|tillad)))?.*(necessary|nødvendige|nødvendig|essential|kun\s+nødvendige)/i,
-    preferences: /(preference(s|r)?|præferencer|indstillinger|valgmuligheder|administrer|purpose|formål|manage|vis\s+detaljer)/i,
+    customize: /(preference(s|r)?|præferencer|indstillinger|valgmuligheder|administrer|purpose|formål|manage|vis\s+detaljer)/i,
     accept: /(accept(er|ér|ance)|tillad|allow|godkend|all|alle)(\s+alle|all)?/i,
     reject: /(reject|afvis|deny|decline|nej\s+tak)(\s+alle)?/i,
 };
@@ -52,8 +57,8 @@ export const IDS = {
     EDIT_INPUT: 'prompt-input-field',
     EDIT_SUBMIT: 'prompt-submit',
     CONNECTOR_SVG: 'inspector-connector-svg',
-    COMPASS_CONTAINER: 'compass-container',
-    COMPASS_DOT: 'compass-dot'
+    RADAR_CONTAINER: 'radar-container',
+    RADAR_POLYGON: 'radar-polygon'
 };
 
 export const CLASSES = {
@@ -70,3 +75,8 @@ export const STYLES = {
     PRIMARY_BLUE: 'rgba(52,152,219,0.95)',
     BG_BLUE: 'rgba(52,152,219,0.06)'
 };
+
+export const DB_TYPE = {
+    GET_SAVED_DECISIONS: 'GET_SAVED_DECISIONS',
+    SAVE_DECISION: 'SAVE_DECISION'
+}
