@@ -45,7 +45,12 @@ async function getSavedPreferences(category) {
     category: category 
   });
 
-  return response?.success ? response.data : [];
+  return response?.success 
+  ? response.data.map(item => ({
+      category: item.category ?? "",
+      decision: (item.decision ?? "").toUpperCase()
+    })) 
+  : [];
 }
 
 async function getDefaultPreferences() {
