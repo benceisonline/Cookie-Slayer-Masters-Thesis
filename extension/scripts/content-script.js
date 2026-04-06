@@ -1,6 +1,7 @@
 import { loadInspectorTool } from "./inspector-tool/inspector.js"; 
 import { initProfile } from "./profile/profile.js";
-import { startScanner } from "./scraper/scraper.js"
+import { startScanner } from "./scraper/scraper.js";
+import { showError } from "./common/messages.js";
 
 // Inject extension stylesheet into the page so UI elements pick up styles
 (async function injectStyles(){
@@ -77,7 +78,11 @@ async function startApp() {
         });
     }
 
-    await initProfile(results);
+    if (results && results.length > 0) {
+        await initProfile(results);
+    } else {
+        showError("We couldn't find any cookie related buttons on this site");
+    }
 }
 
 startApp()

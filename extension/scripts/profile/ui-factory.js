@@ -1,4 +1,5 @@
 import { IDS, VAL } from '../common/types.js';
+import { showError } from '../common/messages.js';
 
 let hideTimeout = null;
 
@@ -178,7 +179,9 @@ function createRadarShape(container, stats, results) {
   updatePolygon();
 }
 
-export function syncOverlays(results, stats) {
+function syncOverlays(results, stats) {
+  let hasVisibleBadge = false;
+
   results.forEach(item => {
     const buttonNode = item.element;
     if (!buttonNode) return;
@@ -189,11 +192,16 @@ export function syncOverlays(results, stats) {
     const existingBadge = document.getElementById(badgeId);
 
     if (statValue >= 0.5) {
+      hasVisibleBadge = true;
       if (!existingBadge) createBadge(buttonNode, item.category);
     } else {
       if (existingBadge) existingBadge.remove();
     }
   });
+
+  if (!hasVisibleBadge && results.length > 0) {
+    showError("No buttons match your current preferences.");
+  }
 }
 
 function createBadge(parent, category) {
