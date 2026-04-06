@@ -4,7 +4,7 @@ import { buildProfile } from './ui-factory.js';
 export async function initProfile(results) {
   try {
     const category = await categoriseWebsite();
-    const preferences = getAppliedPreferences(category);
+    const preferences = await getAppliedPreferences(category);
     const stats = calculateShape(preferences);
 
     buildProfile(stats, category, results);

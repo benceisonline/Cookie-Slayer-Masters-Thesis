@@ -15,26 +15,53 @@ export function categoriseWebsite() {
 }
 
 export function getAppliedPreferences(category) {
-  const isValid = Object.values(WEBSITE_CATEGORIES).includes(category);
-  if (!isValid) {
-    console.warn(`AI returned bad response: ${category}`);
-    return getDefaultPreferences();
-  }
-  const savedPreferences = getSavedPreferences();
-  return savedPreferences.length !== 0 ? savedPreferences : getDefaultPreferences();
+  return new Promise(async (resolve) => {
+    const isValid = Object.values(WEBSITE_CATEGORIES).includes(category);
+    
+    if (!isValid) {
+      console.warn(`AI returned bad response: ${category}`);
+      resolve(await getDefaultPreferences());
+      return; 
+    }
+
+    const savedPreferences = await getSavedPreferences();
+    if (savedPreferences && savedPreferences.length !== 0) {
+      resolve(savedPreferences);
+    } else {
+      resolve(await getDefaultPreferences());
+    }
+  });
 }
 
-export function getSavedPreferences() {
+async function getSavedPreferences() {
   return []; // TODO: Implement chrome.storage.local fetch
 }
 
-export function getDefaultPreferences() {
-  return [
-    {context: DEFAULT.DEFAULT, decision: DECISIONS.CUSTOMIZE}, 
-    // {context: DEFAULT.DEFAULT, decision: DECISIONS.NECESSARY}, 
-    // {context: DEFAULT.DEFAULT, decision: DECISIONS.ACCEPT}, 
-    // {context: DEFAULT.DEFAULT, decision: DECISIONS.REJECT}
-  ];
+async function getDefaultPreferences() {
+  const data = await chrome.storage.local.get("privacyLevel");
+
+  switch (data.privacyLevel.toUpperCase()) {
+    case "LOW":
+      return [
+        {context: DEFAULT.DEFAULT, decision: DECISIONS.ACCEPT}
+      ];
+    case "MEDIUM":
+      return [
+        {context: DEFAULT.DEFAULT, decision: DECISIONS.CUSTOMIZE}, 
+        {context: DEFAULT.DEFAULT, decision: DECISIONS.NECESSARY},
+      ];
+    case "HIGH":
+      return [
+        {context: DEFAULT.DEFAULT, decision: DECISIONS.REJECT},
+      ];
+    default:
+      return [
+        {context: DEFAULT.DEFAULT, decision: DECISIONS.ACCEPT},
+        {context: DEFAULT.DEFAULT, decision: DECISIONS.CUSTOMIZE}, 
+        {context: DEFAULT.DEFAULT, decision: DECISIONS.NECESSARY},
+        {context: DEFAULT.DEFAULT, decision: DECISIONS.REJECT},
+      ];
+  }
 }
 
 export function calculateShape(currentPreferences) {

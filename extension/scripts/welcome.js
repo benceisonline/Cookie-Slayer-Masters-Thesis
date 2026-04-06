@@ -4,7 +4,7 @@ const dots = Array.from(document.querySelectorAll('.dot'));
 const nextBtn = document.getElementById('getStartedBtn');
 
 let currentStep = 0;
-let selectedPrivacy = 'high';
+let selectedPrivacy = '';
 
 // If the welcome page is opened in its own tab/window (not in the
 // extension iframe), hide the final "Done" button since there's no

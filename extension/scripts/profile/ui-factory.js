@@ -199,6 +199,7 @@ function syncOverlays(results, stats) {
     }
   });
 
+  console.log(hasVisibleBadge, results)
   if (!hasVisibleBadge && results.length > 0) {
     showError("No buttons match your current preferences.");
   }
