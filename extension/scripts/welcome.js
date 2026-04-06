@@ -46,8 +46,14 @@ function advanceStep() {
     return;
   }
 
+  const settingsToSave = { 
+    welcomeSeen: true, 
+    privacyLevel: selectedPrivacy,
+    userId: crypto.randomUUID()
+  };
+
   // Final step: save settings and close overlay
-  chrome.storage.local.set({ welcomeSeen: true, privacyLevel: selectedPrivacy }, () => {
+  chrome.storage.local.set(settingsToSave, () => {
     window.parent.postMessage({ type: 'close-welcome' }, '*');
   });
 }

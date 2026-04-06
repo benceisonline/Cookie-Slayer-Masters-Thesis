@@ -75,3 +75,8 @@ export const STYLES = {
     PRIMARY_BLUE: 'rgba(52,152,219,0.95)',
     BG_BLUE: 'rgba(52,152,219,0.06)'
 };
+
+export const DB_TYPE = {
+    GET_SAVED_DECISIONS: 'GET_SAVED_DECISIONS',
+    SAVE_DECISION: 'SAVE_DECISION'
+}

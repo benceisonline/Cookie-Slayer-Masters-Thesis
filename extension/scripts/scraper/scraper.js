@@ -19,7 +19,7 @@ function runForegroundScanner(attempt = 1) {
     const harvestButtons = (node) => {
         if (!node || node.nodeType !== 1 || isHidden(node)) return;
 
-        if (node.tagName === DOM_TYPES.BUTTON && node.id && node.id.trim() !== "") {
+        if (node.tagName === DOM_TYPES.BUTTON) {
             const text = (node.innerText || "").trim();
             if (!text) return;
             const testId = node.getAttribute('data-testid') || node.getAttribute('data-test-id') || "";

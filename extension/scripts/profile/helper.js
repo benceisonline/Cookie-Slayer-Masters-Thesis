@@ -1,5 +1,6 @@
 import { sanitizeServerText } from '../common/utils.js';
-import { WEBSITE_CATEGORIES, VAL, DECISIONS, DEFAULT } from '../common/types.js';
+import { WEBSITE_CATEGORIES, VAL, DECISIONS, DEFAULT, DB_TYPE } from '../common/types.js';
+import { interactWithDB } from '../supabase/api.js';
 
 export function categoriseWebsite() {
   return new Promise((resolve) => {
@@ -24,7 +25,7 @@ export function getAppliedPreferences(category) {
       return; 
     }
 
-    const savedPreferences = await getSavedPreferences();
+    const savedPreferences = await getSavedPreferences(category);
     if (savedPreferences && savedPreferences.length !== 0) {
       resolve(savedPreferences);
     } else {
@@ -33,14 +34,24 @@ export function getAppliedPreferences(category) {
   });
 }
 
-async function getSavedPreferences() {
-  return []; // TODO: Implement chrome.storage.local fetch
+async function getSavedPreferences(category) {
+  const data = await chrome.storage.local.get("userId");
+  const userId = data.userId;
+
+  if (!userId) return [];
+
+  const response = await interactWithDB(DB_TYPE.GET_SAVED_DECISIONS, { 
+    userId: userId, 
+    category: category 
+  });
+
+  return response?.success ? response.data : [];
 }
 
 async function getDefaultPreferences() {
   const data = await chrome.storage.local.get("privacyLevel");
 
-  switch (data.privacyLevel.toUpperCase()) {
+  switch ((data?.privacyLevel ?? "").toUpperCase()) {
     case "LOW":
       return [
         {context: DEFAULT.DEFAULT, decision: DECISIONS.ACCEPT}
@@ -102,4 +113,45 @@ export function calculateShape(currentPreferences) {
     NECESSARY: Math.max(MIN_VALUE, counts.NECESSARY / total),
     CUSTOMIZE: Math.max(MIN_VALUE, counts.CUSTOMIZE / total)
   };
+}
+
+export async function saveDecision(userId, category, decision) {
+  const payload = {
+    userId: userId,
+    category: category.toUpperCase(),
+    decision: (decision ?? "").toUpperCase()
+  };
+
+  const response = await interactWithDB(DB_TYPE.SAVE_DECISION, payload);
+  
+  if (response?.success) {
+    console.log("Decision saved successfully!");
+  } else {
+    console.error("Save failed:", response?.error);
+  }
+}
+
+export async function addEventToResults(results, category) {
+  const data = await chrome.storage.local.get("userId");
+  const userId = data.userId;
+
+  if (!userId) return;
+
+  results.forEach((result) => {
+    const { element, category: resultCategory } = result;
+
+    if (!element) return;
+
+    element.addEventListener('click', async () => {
+      const decisionValue = resultCategory;
+
+      try {
+        console.log(`Saving decision: ${decisionValue} for category: ${category}`);
+
+        await saveDecision(userId, category, decisionValue);
+      } catch (err) {
+        console.error("Cookie Slayer Save Error:", err);
+      }
+    });
+  });
 }
