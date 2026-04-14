@@ -29,6 +29,7 @@ function createContainer() {
     zIndex: '2147483647', 
     transition: 'opacity 0.3s ease',
     boxSizing: 'border-box', 
+    fontFamily: 'var(--ci-font)',
     padding: '40px', 
     visibility: 'hidden', 
     opacity: '0',
@@ -39,25 +40,42 @@ function createContainer() {
 
 function createHeader(container, category) {
   const header = document.createElement('div');
-  header.innerText = category.toUpperCase();
-  
   Object.assign(header.style, {
     width: '100%',
     textAlign: 'center',
-    fontSize: '13px',
-    fontWeight: '800',
-    color: '#1e293b',
-    fontFamily: 'system-ui, -apple-system, sans-serif',
-    letterSpacing: '0.05em',
-    padding: '16px 0',
+    padding: '12px 0 10px',
     borderBottom: '1px solid #f1f5f9',
     position: 'absolute',
     top: '0',
     left: '0',
     pointerEvents: 'none',
-    zIndex: '5'
+    zIndex: '5',
+    boxSizing: 'border-box',
+    fontFamily: 'inherit'
   });
 
+  const title = document.createElement('div');
+  title.innerText = category.toUpperCase();
+  Object.assign(title.style, {
+    fontSize: '13px',
+    fontWeight: '800',
+    color: '#1e293b',
+    letterSpacing: '0.05em'
+  });
+
+  const subtitle = document.createElement('div');
+  subtitle.innerText = 'I try my best, but my categorization may be inaccurate.';
+  Object.assign(subtitle.style, {
+    fontSize: '11px',
+    color: '#64748b',
+    marginTop: '4px',
+    fontWeight: '400',
+    lineHeight: '1.1',
+    fontFamily: 'inherit'
+  });
+
+  header.appendChild(title);
+  header.appendChild(subtitle);
   container.appendChild(header);
 }
 
@@ -95,7 +113,7 @@ function createLabels(container) {
       position: 'absolute', top: pos.top, left: pos.left,
       transform: 'translate(-50%, -50%)', fontSize: '11px',
       fontWeight: 'bold', color: '#94a3b8', textTransform: 'uppercase',
-      whiteSpace: 'nowrap', padding: '4px', zIndex: '3'
+      whiteSpace: 'nowrap', padding: '4px', zIndex: '3', fontFamily: 'inherit'
     });
     container.appendChild(label);
   });

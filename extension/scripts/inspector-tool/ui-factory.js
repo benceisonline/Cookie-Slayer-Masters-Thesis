@@ -181,7 +181,8 @@ export function createEditContainer() {
         minWidth: '320px',
         flexDirection: 'column',
         alignItems: 'stretch',
-        boxSizing: 'border-box'
+        boxSizing: 'border-box',
+        fontFamily: 'var(--ci-font)'
     });
 
     container.innerHTML = `
@@ -193,6 +194,9 @@ export function createEditContainer() {
                 <div class="ci-spinner" style="display:none; margin-left:8px"></div>
             </button>
         </form>
+        <div class="ci-disclaimer" style="margin-top:8px; font-size:12px; color:#6b7280; line-height:1.2; font-family:inherit;">
+            I try my best, but responses may be inaccurate.
+        </div>
     `;
     document.documentElement.appendChild(container);
 
