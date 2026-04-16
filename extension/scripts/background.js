@@ -27,7 +27,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   switch (request.type) {
     case DB_TYPE.GET_SAVED_DECISIONS:
-      getDecisions(request.payload.userId, request.payload.category)
+      getDecisions(request.payload.userId)
         .then(data => sendResponse({ success: true, data }))
         .catch(err => sendResponse({ success: false, error: err.message }));
       break;

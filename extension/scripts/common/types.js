@@ -30,7 +30,9 @@ export const WEBSITE_CATEGORIES = {
     SHOPPING: 'SHOPPING',
     FINANCE: 'FINANCE',
     GOVERMENT: 'GOVERMENT',
-    HEALTH: 'HEALTH'
+    HEALTH: 'HEALTH',
+    PRODUCTIVITY: 'PRODUCTIVITY',
+    ENTERTAINMENT: 'ENTERTAINMENT'
 };
 
 export const DEFAULT = {
@@ -58,7 +60,8 @@ export const IDS = {
     EDIT_SUBMIT: 'prompt-submit',
     CONNECTOR_SVG: 'inspector-connector-svg',
     RADAR_CONTAINER: 'radar-container',
-    RADAR_POLYGON: 'radar-polygon'
+    RADAR_POLYGON: 'radar-polygon',
+    CONTAINER_TITLE: 'container-title'
 };
 
 export const CLASSES = {

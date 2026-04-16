@@ -39,26 +39,35 @@ function updateUI() {
   }
 }
 
-function advanceStep() {
+async function initializeUser() {
+  const result = await chrome.storage.local.get("userId");
+  if (!result.userId) {
+    await chrome.storage.local.set({ userId: crypto.randomUUID() });
+  }
+}
+
+async function advanceStep() {
   if (currentStep < steps.length - 1) {
     currentStep += 1;
     updateUI();
     return;
   }
 
+  await initializeUser();
+
   const settingsToSave = { 
     welcomeSeen: true, 
     privacyLevel: selectedPrivacy,
-    userId: crypto.randomUUID()
   };
 
   // Final step: save settings and close overlay
-  chrome.storage.local.set(settingsToSave, () => {
-    window.parent.postMessage({ type: 'close-welcome' }, '*');
-  });
+  await chrome.storage.local.set(settingsToSave);
+  window.parent.postMessage({ type: 'close-welcome' }, '*');
 }
 
-nextBtn.addEventListener('click', advanceStep);
+nextBtn.addEventListener('click', async () => {
+  await advanceStep();
+});
 
 // Privacy selection
 const privacyOptions = Array.from(document.querySelectorAll('.privacy-option'));

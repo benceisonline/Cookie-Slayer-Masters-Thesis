@@ -1,16 +1,14 @@
 import { supabase } from './client.js';
 
 /**
- * Fetches decisions for a user based on category
+ * Fetches decisions for a user grouped by category
  * @param {string} userId - The unique ID of the user
- * @param {string} category - The context/category of the site
  */
-export async function getDecisions(userId, category) {
+export async function getDecisions(userId) {
   const { data, error } = await supabase
-    .from('decisions')
+    .from('decision')
     .select('*')
-    .eq('user_id', userId)
-    .eq('category', category);
+    .eq('user_id', userId);
 
   if (error) throw error;
   return data; 
@@ -24,7 +22,7 @@ export async function getDecisions(userId, category) {
  */
 export async function saveDecision(userId, category, decision) {
   const { data, error } = await supabase
-    .from('decisions')
+    .from('decision')
     .upsert({ 
       user_id: userId, 
       category: category, 
@@ -34,3 +32,4 @@ export async function saveDecision(userId, category, decision) {
   if (error) throw error;
   return data;
 }
+

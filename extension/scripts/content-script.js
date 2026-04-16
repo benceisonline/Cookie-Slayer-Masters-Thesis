@@ -62,8 +62,6 @@ window.addEventListener('message', (event) => {
 
 loadInspectorTool();
 
-let hasMadeDecision = false;
-
 async function startApp() {
     let results;
 
