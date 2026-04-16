@@ -62,9 +62,21 @@ export function createToggleButton(onClick) {
     btn.style.touchAction = 'none';
 
     const applyPosition = () => {
-        btn.style.left = `${Math.max(4, Math.min(window.innerWidth - btn.offsetWidth - 4, targetX))}px`;
-        btn.style.top = `${Math.max(4, Math.min(window.innerHeight - btn.offsetHeight - 4, targetY))}px`;
+        const clampedX = Math.max(4, Math.min(window.innerWidth - btn.offsetWidth - 4, targetX));
+        const clampedY = Math.max(4, Math.min(window.innerHeight - btn.offsetHeight - 4, targetY));
+        btn.style.left = `${clampedX}px`;
+        btn.style.top = `${clampedY}px`;
         btn.style.right = 'auto';
+
+        // Position the info button relative to the toggle using the initial offset
+        try {
+            const infoLeft = Math.max(4, Math.min(window.innerWidth - infoButton.offsetWidth - 4, clampedX + infoOffsetX));
+            const infoTop = Math.max(4, Math.min(window.innerHeight - infoButton.offsetHeight - 4, clampedY + infoOffsetY));
+            infoButton.style.left = `${infoLeft}px`;
+            infoButton.style.top = `${infoTop}px`;
+            infoButton.style.right = 'auto';
+        } catch (e) {}
+
         frameId = null;
     };
 
@@ -146,6 +158,15 @@ export function createToggleButton(onClick) {
     infoButton.addEventListener('click', (event) => {
         event.preventDefault();
         event.stopPropagation();
+        // If inspector toggle is active, untoggle it before opening the welcome overlay
+        try {
+            if (btn && btn.dataset && btn.dataset.active === 'true') {
+                // update the toggle visual state
+                setActive(false);
+                // call the provided onClick to ensure inspector internal state is disabled
+                try { onClick && onClick(event); } catch (_) {}
+            }
+        } catch (_) {}
         window.postMessage({ action: 'show-welcome-overlay' }, '*');
     });
 
@@ -158,6 +179,15 @@ export function createToggleButton(onClick) {
 
     document.documentElement.appendChild(btn);
     document.documentElement.appendChild(infoButton);
+    // Compute initial offset between info button and toggle so we can move them together
+    let infoOffsetX = 0;
+    let infoOffsetY = 0;
+    try {
+        const bRect = btn.getBoundingClientRect();
+        const iRect = infoButton.getBoundingClientRect();
+        infoOffsetX = iRect.left - bRect.left;
+        infoOffsetY = iRect.top - bRect.top;
+    } catch (e) {}
 }
 
 // Build and append the edit container UI used for composing prompts.
@@ -199,6 +229,55 @@ export function createEditContainer() {
         </div>
     `;
     document.documentElement.appendChild(container);
+
+    // Ensure the send button uses consistent light styling and pointer behavior
+    try {
+        const submitBtnEl = container.querySelector('#ci-edit-submit');
+        if (submitBtnEl) {
+            Object.assign(submitBtnEl.style, {
+                background: '#3498db',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
+                padding: '6px 10px',
+                display: 'flex',
+                alignItems: 'center',
+                whiteSpace: 'nowrap',
+                transition: 'transform 120ms ease, box-shadow 120ms ease, opacity 120ms ease'
+            });
+
+            // Hover effect (only when enabled)
+            submitBtnEl.addEventListener('mouseenter', () => {
+                if (!submitBtnEl.disabled) {
+                    submitBtnEl.style.transform = 'translateY(-2px)';
+                    submitBtnEl.style.boxShadow = '0 8px 20px rgba(0,0,0,0.18)';
+                }
+            });
+            submitBtnEl.addEventListener('mouseleave', () => {
+                submitBtnEl.style.transform = '';
+                submitBtnEl.style.boxShadow = '0 4px 12px rgba(0,0,0,0.12)';
+            });
+
+            // Keep disabled styling consistent across pages using a MutationObserver
+            const updateDisabledStyle = () => {
+                if (submitBtnEl.disabled) {
+                    submitBtnEl.style.opacity = '0.6';
+                    submitBtnEl.style.cursor = 'default';
+                    submitBtnEl.style.boxShadow = 'none';
+                } else {
+                    submitBtnEl.style.opacity = '1';
+                    submitBtnEl.style.cursor = 'pointer';
+                    submitBtnEl.style.boxShadow = '0 4px 12px rgba(0,0,0,0.12)';
+                }
+            };
+
+            const mo = new MutationObserver(() => updateDisabledStyle());
+            mo.observe(submitBtnEl, { attributes: true, attributeFilter: ['disabled', 'style'] });
+            updateDisabledStyle();
+        }
+    } catch (e) { /* ignore */ }
 
     // Wire up the suggestion buttons: make dragstart set plain text, click inserts into textarea
     try {
@@ -258,11 +337,13 @@ export function createEditContainer() {
             btn.style.border = '1px solid #ddd';
             btn.style.background = '#f7f9fc';
             btn.style.fontSize = '13px';
+            btn.style.color = '#000';
             btn.style.boxSizing = 'border-box';
 
             const label = document.createElement('span');
             label.className = 'ci-suggestion-label';
             if (emoji) label.textContent = `${emoji} ${text}`; else label.textContent = text;
+            label.style.color = '#000';
             const iconWrap = document.createElement('span');
             iconWrap.className = 'ci-drag-icon';
             iconWrap.setAttribute('aria-hidden', 'true');
@@ -332,7 +413,9 @@ export function createEditContainer() {
         pager.style.gap = '6px';
         pager.style.marginBottom = '6px';
         const upBtn = document.createElement('button'); upBtn.type = 'button'; upBtn.textContent = '▲'; upBtn.title = 'Earlier'; upBtn.style.flex = '1'; upBtn.style.padding = '6px';
+        upBtn.style.background = '#fff'; upBtn.style.color = '#000'; upBtn.style.border = '1px solid #ddd'; upBtn.style.borderRadius = '6px'; upBtn.style.cursor = 'pointer';
         const downBtn = document.createElement('button'); downBtn.type = 'button'; downBtn.textContent = '▼'; downBtn.title = 'Newer'; downBtn.style.flex = '1'; downBtn.style.padding = '6px';
+        downBtn.style.background = '#fff'; downBtn.style.color = '#000'; downBtn.style.border = '1px solid #ddd'; downBtn.style.borderRadius = '6px'; downBtn.style.cursor = 'pointer';
         
         // Trash icon on the rightmost side — render as a non-button element so cursor doesn't change
         const trashEl = document.createElement('div');

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -39,9 +40,69 @@
       object-fit: contain;
     }
 
+    .welcome-video {
+      width: calc(100% + 20px); /* extend 5px each side */
+      max-height: 420px;
+      height: 380px;
+      object-fit: cover;
+      border-radius: 10px;
+
+    .video-wrapper {
+      position: relative;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .video-overlay {
+      position: absolute;
+      left: 18px;
+      bottom: 18px;
+      background: rgba(255,255,255,0.95);
+      padding: 12px 16px;
+      border-radius: 10px;
+      text-align: left;
+      max-width: 70%;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+    }
+
+    .video-overlay .step-title {
+      font-size: 18px;
+      color: #333;
+      margin: 0 0 6px 0;
+      font-weight: 700;
+    }
+
+    .video-overlay .tagline {
+      font-size: 14px;
+      color: #666;
+      margin: 0;
+    }
+      background: transparent;
+      border: none;
+      box-shadow: none;
+      outline: none;
+      pointer-events: none; /* disable user interaction */
+      display: block;
+      margin: 0 -5px; /* shift to cover edges by 5px */
+    }
+
+    /* Wider container when showing video slides */
+    .welcome-container.video-active {
+      max-width: 760px;
+      padding: 32px 28px;
+      overflow: hidden; /* clip overflowing video to rounded corners */
+    }
+
     @keyframes bounce {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-10px); }
+
+      0%,
+      100% {
+        transform: translateY(0);
+      }
+
+      50% {
+        transform: translateY(-10px);
+      }
     }
 
     h1 {
@@ -210,68 +271,126 @@
     }
   </style>
 </head>
+
 <body>
   <div class="welcome-container">
     <div class="steps">
       <div class="step active" data-step="0">
-        <h1 style="font-size:30px; margin-bottom:12px;" style="font-weight:400;" >
-          Welcome to <span style= "font-weight:200;" >CookieSlayer</span>
+        <h1 style="font-size:30px; margin-bottom:12px;" style="font-weight:400;">
+          Welcome to <span style="font-weight:200;">CookieSlayer</span>
         </h1>
-        <p class="tagline">Take control over website cookies and make informed privacy choices.</p>
+        <p class="tagline">Regain your online privacy and choose what’s right for you.</p>
         <img class="welcome-icon" src="images/cookie.jpg" alt="Cookie" />
 
         <div class="features">
           <div class="feature-item">
             <span class="feature-icon">✔️</span>
-            <span>Understand what cookies websites use</span>
+            <span>Annoyed with cookie popups? We can help you.</span>
           </div>
           <div class="feature-item">
             <span class="feature-icon">✔️</span>
-            <span>Lets you control what websites can store</span>
+            <span>You're smarter than AI! You are in control.</span>
           </div>
           <div class="feature-item">
             <span class="feature-icon">✔️</span>
-            <span>See which cookies track you</span>
+            <span>Curious about your data? Ask the Privacy Agent.</span>
           </div>
           <div class="feature-item">
             <span class="feature-icon">✔️</span>
-            <span>Get AI-powered insights about cookies</span>
+            <span>More questions? Keep asking.</span>
           </div>
         </div>
       </div>
 
+      
+      <!-- Video slides -->
       <div class="step" data-step="1">
+        <div class="video-wrapper">
+          <video class="welcome-video" autoplay muted loop playsinline preload="metadata" src="scripts/common/videos/Video1.mp4">Your browser does not support the video tag.</video>
+          <div class="video-overlay">
+            <div class="step-title">Unsure about what to choose?</div>
+            <p class="tagline">A checkmark highlights the best choice based on your preferences.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="step" data-step="2">
+        <div class="video-wrapper">
+          <video class="welcome-video" autoplay muted loop playsinline preload="metadata" src="scripts/common/videos/Video2.mp4">Your browser does not support the video tag.</video>
+          <div class="video-overlay">
+            <div class="step-title">Need more information before making a choice?</div>
+            <p class="tagline">Select some text and start asking questions.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="step" data-step="3">
+        <div class="video-wrapper">
+          <video class="welcome-video" autoplay muted loop playsinline preload="metadata" src="scripts/common/videos/Video3.mp4">Your browser does not support the video tag.</video>
+          <div class="video-overlay">
+            <div class="step-title">Are you asking the same things?</div>
+            <p class="tagline">Turn prompts into actions - click, drag, or stack.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="step" data-step="4">
+        <div class="video-wrapper">
+          <video class="welcome-video" autoplay muted loop playsinline preload="metadata" src="scripts/common/videos/Video4.mp4">Your browser does not support the video tag.</video>
+          <div class="video-overlay">
+            <div class="step-title">Was an answer not good enough?</div>
+            <p class="tagline">Ask the Privacy Agent to elaborate or retry an answer.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="step" data-step="5">
+        <div class="video-wrapper">
+          <video class="welcome-video" autoplay muted loop playsinline preload="metadata" src="scripts/common/videos/Video5.mp4">Your browser does not support the video tag.</video>
+          <div class="video-overlay">
+            <div class="step-title">Are you ready to make a choice?</div>
+            <p class="tagline">Turn the agent off when you’re ready to decide.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- End video slides -->
+
+      <div class="step" data-step="6">
         <h1 class="step-title">CookieSlayer</h1>
-        <h2 class="step-heading">Your Privacy Level</h2>
+        <h2 class="step-heading">Your Privacy Concern Level</h2>
         <div class="privacy-options">
           <button class="privacy-option" data-value="high">
             <span class="privacy-option-icon">🔒</span>
             <div>
               <strong>Maximum Privacy</strong><br>
-              <span class="privacy-description">Prefer rejecting all cookies</span>
+              <span class="privacy-description">Prefer rejecting all cookies.</span><br>
+              <span class="privacy-description">I want to keep my data to myself.</span>
             </div>
           </button>
           <button class="privacy-option" data-value="medium">
             <span class="privacy-option-icon">🔐</span>
             <div>
               <strong>Medium Privacy</strong><br>
-              <span class="privacy-description">Prefer allowing non-essential cookies or customizing your privacy</span>
+              <span class="privacy-description">Prefer allowing some cookies or customizing.</span><br>
+              <span class="privacy-description">I can be a bit more loose about my data at times.</span>
             </div>
           </button>
           <button class="privacy-option" data-value="low">
             <span class="privacy-option-icon">🔓</span>
             <div>
               <strong>Low Privacy</strong><br>
-              <span class="privacy-description">No preference towards your privacy</span>
+              <span class="privacy-description">No preference towards your cookie choices.</span><br>
+                <span class="privacy-description"> I do not care about what happens to my data.</span>
             </div>
           </button>
         </div>
       </div>
 
-      <div class="step" data-step="2">
-        <h1 class="step-title">CookieSlayer</h1>
-        <h2 class="step-heading">All set!</h2>
-        <p>You’re ready to start inspecting cookies on any website.</p>
+      <div class="step" data-step="7">
+        <h1 style="font-size:30px; margin-bottom:12px;"><span style="font-weight:200;">CookieSlayer</span></h1>
+        <p class="tagline" style="font-size:18px; color:#333; margin-bottom:10px; font-weight:700;">All set!</p>
+        <p class="tagline">You’re ready to start inspecting cookies on any website.</p>
       </div>
     </div>
 
@@ -283,9 +402,15 @@
       <span class="dot active"></span>
       <span class="dot"></span>
       <span class="dot"></span>
+      <span class="dot"></span>
+      <span class="dot"></span>
+      <span class="dot"></span>
+      <span class="dot"></span>
+      <span class="dot"></span>
     </div>
   </div>
 
   <script src="scripts/welcome.js"></script>
 </body>
+
 </html>
