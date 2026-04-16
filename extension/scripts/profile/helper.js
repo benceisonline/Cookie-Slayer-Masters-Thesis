@@ -1,6 +1,7 @@
 import { sanitizeServerText } from '../common/utils.js';
 import { WEBSITE_CATEGORIES, VAL, DECISIONS, DEFAULT, DB_TYPE } from '../common/types.js';
 import { interactWithDB } from '../supabase/api.js';
+import { getActiveProfile } from './ui-factory.js';
 
 export function categoriseWebsite() {
   return new Promise((resolve) => {
@@ -132,7 +133,12 @@ function calculateShape(preferences) {
   };
 }
 
-export async function saveDecision(userId, category, decision) {
+export async function saveDecisionAndRecommended(userId, category, decision) {
+  const decisionId = await saveDecision(userId, category, decision);
+  await saveRecommended(decisionId);
+}
+
+async function saveDecision(userId, category, decision) {
   const payload = {
     userId: userId,
     category: category.toUpperCase(),
@@ -142,7 +148,35 @@ export async function saveDecision(userId, category, decision) {
   const response = await interactWithDB(DB_TYPE.SAVE_DECISION, payload);
   
   if (response?.success) {
-    console.log("Decision saved successfully!");
+    console.log(`Saving decision: ${decision} for category: ${category}`);
+    return response.data; 
+  } else {
+    console.error("Save failed:", response?.error);
+  }
+}
+
+async function saveRecommended(decisionId) {
+  const profileMap = getActiveProfile();
+
+  const map = {
+    used_category: profileMap.category,
+    necasscary_value: profileMap.shape.NECESSARY,
+    reject_value: profileMap.shape.REJECT,
+    accept_value: profileMap.shape.ACCEPT,
+    customize_value: profileMap.shape.CUSTOMIZE,
+    manual: profileMap.manual
+  }
+
+  const payload = {
+    decisionId: decisionId,
+    map: map
+  };
+
+  const response = await interactWithDB(DB_TYPE.SAVE_RECOMMENDED, payload);
+  
+  if (response?.success) {
+    console.log(`Saving recommended: ${profileMap.category}`);
+    return response.data; 
   } else {
     console.error("Save failed:", response?.error);
   }
@@ -163,8 +197,7 @@ export async function addEventToResults(results, category) {
       const decisionValue = resultCategory;
 
       try {
-        console.log(`Saving decision: ${decisionValue} for category: ${category}`);
-        await saveDecision(userId, category, decisionValue);
+        await saveDecisionAndRecommended(userId, category, decisionValue);
       } catch (err) {
         console.error("Cookie Slayer Save Error:", err);
       }

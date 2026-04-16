@@ -1,4 +1,5 @@
 import { IDS, STYLES } from '../common/types.js';
+import { setAction } from './inspector.js';
 
 // Create the main inspector overlay element.
 // Returns a fixed-position div used to draw a highlighted rectangle
@@ -292,6 +293,8 @@ export function createEditContainer() {
                 // Apply pastel selection background
                 try { applyTextareaHighlight(input, 0, input.value.length); } catch (_) {}
                 input.dispatchEvent(new Event('input', { bubbles: true }));
+
+                setAction('CLICKED');
             });
 
             suggestionsList.appendChild(btn);
@@ -520,6 +523,7 @@ export function createEditContainer() {
                     // Apply a short fade-in animation to make the dropped text appear smoother
                     input.classList.add('ci-drop-fade');
                     input.addEventListener('animationend', function _rm() { input.classList.remove('ci-drop-fade'); input.removeEventListener('animationend', _rm); });
+                    setAction("DRAGGED");
                 } catch (e) { /* ignore */ }
             });
         }

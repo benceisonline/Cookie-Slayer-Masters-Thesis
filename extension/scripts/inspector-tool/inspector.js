@@ -1,13 +1,19 @@
-import { IDS, CLASSES } from '../common/types.js';
+import { IDS, CLASSES, DB_TYPE } from '../common/types.js';
 import { createOverlay, createToggleButton, createEditContainer, injectUiAnimations } from './ui-factory.js';
-import { adjustTextareaHeight, sanitizeServerText } from '../common/utils.js';
+import { adjustTextareaHeight, sanitizeServerText, saveLog } from '../common/utils.js';
 import { createPostIt, appendFollowupToNote } from './postits.js';
+import { interactWithDB } from '../supabase/api.js';
 
 let active = false;
 let lastHovered = null;
 let selectedElement = null;
 let selectedTargetElement = null;
 let editWasOpen = false;
+let action = "TYPED";
+
+export function setAction(newValue) {
+    action = newValue;
+}
 
 // Public entrypoint. Ensures the inspector is only initialized once and
 // calls the internal init() function to wire up UI and event handlers.
@@ -265,7 +271,7 @@ function onMouseMove(e) {
 // edit UI for clicked post-its or page elements, or ignore clicks on
 // internal UI controls. When opening, it selects the target and
 // positions the edit container appropriately.
-function onClickCapture(e) {
+async function onClickCapture(e) {
     // If the post-it close button was clicked, allow the event to proceed so the close handler runs
     if (e.target && e.target.closest && e.target.closest('.ci-postit-close')) return;
     // Allow undo/redo buttons on the post-it to receive their events
@@ -297,12 +303,88 @@ function onClickCapture(e) {
 
     selectedElement = el;
     selectedTargetElement = el;
+
+    await saveEvent({element: el}, saveInspector);
+
     window.__ci_postit_state.currentParent = null; // New selection, clear parent
     
     showOverlayFor(el);
 
     // Open the edit UI in a predetermined spot above the selected element
     openEditUI(null, null, el);
+}
+
+async function saveEvent(parameterMap, ...tasks) {
+    const logId = await saveLog();
+    if (!logId) {
+        console.warn(`No log id found ${logId}`);
+        return;
+    }
+    await Promise.all(tasks.map(task => task(logId, parameterMap)));
+}
+
+async function saveInspector(logId, parameterMap) {
+    const elementClean = {
+        tagName: parameterMap.element.tagName,
+        className: parameterMap.element.className,
+        id: parameterMap.element.id,
+        text: parameterMap.element.innerText?.substring(0, 100)
+    };
+
+    const payload = {
+        logId: logId,
+        element: JSON.stringify(elementClean)
+    }
+
+    const response = await interactWithDB(DB_TYPE.SAVE_INSPECTOR, payload);
+
+    if (response?.success) {
+        console.log(`Saving inspector: ${JSON.stringify(elementClean)}`);
+        return response.data; 
+    } else {
+        console.error("Save failed:", response?.error);
+    }
+}
+
+async function saveNote(logId, parameterMap) {
+    const payload = {
+        logId: logId,
+        parentId: parameterMap.parentId,
+        input: parameterMap.input,
+        output: parameterMap.output,
+        action: action
+    }
+
+    const response = await interactWithDB(DB_TYPE.SAVE_NOTE, payload);
+
+    action = 'TYPED';
+    if (response?.success) {
+        console.log(`Saving note: ${parameterMap}`);
+        window.__ci_postit_state.currentParentDbId = response.data;
+        return response.data; 
+    } else {
+        console.error("Save failed:", response?.error);
+    }
+}
+
+async function saveFollowup(parentId, input, output) {
+    const payload = {
+        noteId: window.__ci_postit_state.currentParentDbId,
+        parentId: parentId,
+        input: input,
+        output: output,
+        action: action
+    }
+
+    const response = await interactWithDB(DB_TYPE.SAVE_FOLLOWUP, payload);
+
+    action = 'TYPED';
+    if (response?.success) {
+        console.log(`Saving followup: ${payload}`);
+        return response.data; 
+    } else {
+        console.error("Save failed:", response?.error);
+    }
 }
 
 // Utility: returns true if the given element is part of the inspector's
@@ -511,9 +593,12 @@ function setupFormLogic() {
                 const text = sanitizeServerText(response.text);
                 if (parentId) {
                     appendFollowupToNote(parentId, text, userInput);
+                    saveFollowup(parentId, userInput, text);
                 } else {
                     const newId = createPostIt(text, target, { title: userInput });
                     window.__ci_postit_state.currentParent = newId;
+
+                    saveEvent({parentId: newId, input: userInput, output: text}, saveNote);
 
                     // Ensure overlay and edit UI are placed over the newly created note
                     const note = document.getElementById(newId);

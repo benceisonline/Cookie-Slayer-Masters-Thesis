@@ -1,3 +1,6 @@
+import { DB_TYPE } from '../common/types.js';
+import { interactWithDB } from '../supabase/api.js';
+
 // Welcome page script
 const steps = Array.from(document.querySelectorAll('.step'));
 const dots = Array.from(document.querySelectorAll('.dot'));
@@ -41,9 +44,12 @@ function updateUI() {
 
 async function initializeUser() {
   const result = await chrome.storage.local.get("userId");
-  if (!result.userId) {
-    await chrome.storage.local.set({ userId: crypto.randomUUID() });
+  let userId = result.userId
+  if (!userId) {
+    userId = crypto.randomUUID();
+    await chrome.storage.local.set({ userId: userId });
   }
+  return userId;
 }
 
 async function advanceStep() {
@@ -53,7 +59,8 @@ async function advanceStep() {
     return;
   }
 
-  await initializeUser();
+  const userId = await initializeUser();
+  await savePrivacyLevel(userId, selectedPrivacy);
 
   const settingsToSave = { 
     welcomeSeen: true, 
@@ -62,7 +69,23 @@ async function advanceStep() {
 
   // Final step: save settings and close overlay
   await chrome.storage.local.set(settingsToSave);
-  window.parent.postMessage({ type: 'close-welcome' }, '*');
+  window.parent.postMessage({ type: 'close-welcome' }, '*');  
+}
+
+async function savePrivacyLevel(userId, level) {
+  const payload = {
+    userId: userId,
+    level: level,
+  };
+
+  const response = await interactWithDB(DB_TYPE.SAVE_PRIVACY_CHOICE, payload);
+  
+  if (response?.success) {
+    console.log(`Saving privacy choice: ${level}`);
+    return response.data; 
+  } else {
+    console.error("Save failed:", response?.error);
+  }
 }
 
 nextBtn.addEventListener('click', async () => {

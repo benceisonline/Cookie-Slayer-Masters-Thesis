@@ -39,7 +39,8 @@ function createIndexMap(stats, category) {
   categoryIndexMap = orderedKeys.map((cat, index) => ({
     index,
     category: cat,
-    shape: stats[cat]
+    shape: stats[cat],
+    manual: false
   }));
 }
 
@@ -230,7 +231,7 @@ function createRadarShape(container, stats) {
 
         stats[axis.key] = Math.max(MIN_VAL, Math.min(1, val));
 
-        console.log(stats)
+        stats['manual'] = true; 
         
         container._updateRadar(stats);
         syncOverlays(stats);
@@ -385,4 +386,8 @@ function hideRadar() {
       radar.style.visibility = 'hidden';
       radar.style.opacity = '0';
   }, 150);
+}
+
+export function getActiveProfile() {
+  return categoryIndexMap[currentIndex];
 }
