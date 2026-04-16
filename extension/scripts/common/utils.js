@@ -1,3 +1,6 @@
+import { interactWithDB } from '../supabase/api.js';
+import { DB_TYPE } from '../common/types.js';
+
 /**
  * Dynamically adjusts the height of a textarea based on its content.
  * @param {HTMLTextAreaElement} el - The textarea element to resize.
@@ -51,3 +54,24 @@ export function sanitizeServerText(s){
       s = s.replace(/<(\/?)(?!b\b)[^>]*>/gi, '');
       return s.trim();
     }
+
+export async function saveLog() {
+    const data = await chrome.storage.local.get("userId");
+    const userId = data.userId;
+
+    if (!userId) return;
+
+    const payload = {
+        userId: userId,
+        website: document.URL
+    }
+
+    const response = await interactWithDB(DB_TYPE.SAVE_LOG, payload)
+
+    if (response?.success) {
+        console.log(`Saving log: ${document.URL}`);
+        return response.data; 
+    } else {
+        console.error("Save failed:", response?.error);
+    }
+}

@@ -1,6 +1,7 @@
 import { sanitizeServerText } from '../common/utils.js';
 import { WEBSITE_CATEGORIES, VAL, DECISIONS, DEFAULT, DB_TYPE } from '../common/types.js';
 import { interactWithDB } from '../supabase/api.js';
+import { getActiveProfile } from './ui-factory.js';
 
 export function categoriseWebsite() {
   return new Promise((resolve) => {
@@ -21,36 +22,40 @@ export function getAppliedPreferences(category) {
     
     if (!isValid) {
       console.warn(`AI returned bad response: ${category}`);
-      resolve(await getDefaultPreferences());
-      return; 
     }
 
-    const savedPreferences = await getSavedPreferences(category);
-    if (savedPreferences && savedPreferences.length !== 0) {
-      resolve(savedPreferences);
-    } else {
-      resolve(await getDefaultPreferences());
-    }
+    resolve(await getGroupedPreferences());
   });
 }
 
-async function getSavedPreferences(category) {
+async function getGroupedPreferences() {
   const data = await chrome.storage.local.get("userId");
   const userId = data.userId;
 
-  if (!userId) return [];
+  if (!userId) return {};
 
-  const response = await interactWithDB(DB_TYPE.GET_SAVED_DECISIONS, { 
-    userId: userId, 
-    category: category 
+  const [response, defaultPrefs] = await Promise.all([
+    interactWithDB(DB_TYPE.GET_SAVED_DECISIONS, { userId }),
+    getDefaultPreferences()
+  ]);
+
+  if (!response?.success) return {};
+
+  const grouped = response.data.reduce((acc, item) => {
+    const category = (item.category ?? "").toUpperCase();
+    const decision = (item.action_type ?? "").toUpperCase();
+
+    if (!acc[category]) {
+      acc[category] = []; 
+    }
+
+    acc[category].push({ category, decision });
+    return acc;
+  }, {
+    [DEFAULT.DEFAULT.toUpperCase()]: [...defaultPrefs]
   });
 
-  return response?.success 
-  ? response.data.map(item => ({
-      category: item.category ?? "",
-      decision: (item.decision ?? "").toUpperCase()
-    })) 
-  : [];
+  return grouped;
 }
 
 async function getDefaultPreferences() {
@@ -59,28 +64,38 @@ async function getDefaultPreferences() {
   switch ((data?.privacyLevel ?? "").toUpperCase()) {
     case "LOW":
       return [
-        {context: DEFAULT.DEFAULT, decision: DECISIONS.ACCEPT}
+        {category: DEFAULT.DEFAULT, decision: DECISIONS.ACCEPT}
       ];
     case "MEDIUM":
       return [
-        {context: DEFAULT.DEFAULT, decision: DECISIONS.CUSTOMIZE}, 
-        {context: DEFAULT.DEFAULT, decision: DECISIONS.NECESSARY},
+        {category: DEFAULT.DEFAULT, decision: DECISIONS.CUSTOMIZE}, 
+        {category: DEFAULT.DEFAULT, decision: DECISIONS.NECESSARY},
       ];
     case "HIGH":
       return [
-        {context: DEFAULT.DEFAULT, decision: DECISIONS.REJECT},
+        {category: DEFAULT.DEFAULT, decision: DECISIONS.REJECT},
       ];
     default:
       return [
-        {context: DEFAULT.DEFAULT, decision: DECISIONS.ACCEPT},
-        {context: DEFAULT.DEFAULT, decision: DECISIONS.CUSTOMIZE}, 
-        {context: DEFAULT.DEFAULT, decision: DECISIONS.NECESSARY},
-        {context: DEFAULT.DEFAULT, decision: DECISIONS.REJECT},
+        {category: DEFAULT.DEFAULT, decision: DECISIONS.ACCEPT},
+        {category: DEFAULT.DEFAULT, decision: DECISIONS.CUSTOMIZE}, 
+        {category: DEFAULT.DEFAULT, decision: DECISIONS.NECESSARY},
+        {category: DEFAULT.DEFAULT, decision: DECISIONS.REJECT},
       ];
   }
 }
 
-export function calculateShape(currentPreferences) {
+export function getAllCategoryShapes(groupedPreferences) {
+  const shapesByCategory = {};
+
+  for (const [category, preferences] of Object.entries(groupedPreferences)) {
+    shapesByCategory[category] = calculateShape(preferences);
+  }
+
+  return shapesByCategory;
+}
+
+function calculateShape(preferences) {
   const MIN_VALUE = VAL.MIN_VALUE;
   const stats = { 
     ACCEPT: MIN_VALUE, 
@@ -89,14 +104,12 @@ export function calculateShape(currentPreferences) {
     CUSTOMIZE: MIN_VALUE 
   };
 
-  if (!currentPreferences || currentPreferences.length === 0) {
-    return stats;
-  }
+  if (!preferences || preferences.length === 0) return stats;
 
-  const isDefaultContext = currentPreferences.some(p => p.context === DEFAULT.DEFAULT);
+  const isDefaultCategory = preferences.some(p => p.category === DEFAULT.DEFAULT);
 
-  if (isDefaultContext) {
-    currentPreferences.forEach(p => {
+  if (isDefaultCategory) {
+    preferences.forEach(p => {
       const action = p.decision;
       if (stats.hasOwnProperty(action)) {
         stats[action] = 1.0;
@@ -106,11 +119,11 @@ export function calculateShape(currentPreferences) {
   }
 
   const counts = { ACCEPT: 0, REJECT: 0, NECESSARY: 0, CUSTOMIZE: 0 };
-  currentPreferences.forEach(p => {
+  preferences.forEach(p => {
     if (counts.hasOwnProperty(p.decision)) counts[p.decision] += 1;
   });
 
-  const total = currentPreferences.length;
+  const total = preferences.length;
   
   return {
     ACCEPT: Math.max(MIN_VALUE, counts.ACCEPT / total),
@@ -120,7 +133,12 @@ export function calculateShape(currentPreferences) {
   };
 }
 
-export async function saveDecision(userId, category, decision) {
+export async function saveDecisionAndRecommended(userId, category, decision) {
+  const decisionId = await saveDecision(userId, category, decision);
+  await saveRecommended(decisionId);
+}
+
+async function saveDecision(userId, category, decision) {
   const payload = {
     userId: userId,
     category: category.toUpperCase(),
@@ -130,7 +148,35 @@ export async function saveDecision(userId, category, decision) {
   const response = await interactWithDB(DB_TYPE.SAVE_DECISION, payload);
   
   if (response?.success) {
-    console.log("Decision saved successfully!");
+    console.log(`Saving decision: ${decision} for category: ${category}`);
+    return response.data; 
+  } else {
+    console.error("Save failed:", response?.error);
+  }
+}
+
+async function saveRecommended(decisionId) {
+  const profileMap = getActiveProfile();
+
+  const map = {
+    used_category: profileMap.category,
+    necasscary_value: profileMap.shape.NECESSARY,
+    reject_value: profileMap.shape.REJECT,
+    accept_value: profileMap.shape.ACCEPT,
+    customize_value: profileMap.shape.CUSTOMIZE,
+    manual: profileMap.manual
+  }
+
+  const payload = {
+    decisionId: decisionId,
+    map: map
+  };
+
+  const response = await interactWithDB(DB_TYPE.SAVE_RECOMMENDED, payload);
+  
+  if (response?.success) {
+    console.log(`Saving recommended: ${profileMap.category}`);
+    return response.data; 
   } else {
     console.error("Save failed:", response?.error);
   }
@@ -151,9 +197,7 @@ export async function addEventToResults(results, category) {
       const decisionValue = resultCategory;
 
       try {
-        console.log(`Saving decision: ${decisionValue} for category: ${category}`);
-
-        await saveDecision(userId, category, decisionValue);
+        await saveDecisionAndRecommended(userId, category, decisionValue);
       } catch (err) {
         console.error("Cookie Slayer Save Error:", err);
       }
