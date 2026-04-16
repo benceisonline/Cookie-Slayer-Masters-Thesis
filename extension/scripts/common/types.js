@@ -30,7 +30,9 @@ export const WEBSITE_CATEGORIES = {
     SHOPPING: 'SHOPPING',
     FINANCE: 'FINANCE',
     GOVERMENT: 'GOVERMENT',
-    HEALTH: 'HEALTH'
+    HEALTH: 'HEALTH',
+    PRODUCTIVITY: 'PRODUCTIVITY',
+    ENTERTAINMENT: 'ENTERTAINMENT'
 };
 
 export const DEFAULT = {
@@ -58,7 +60,8 @@ export const IDS = {
     EDIT_SUBMIT: 'prompt-submit',
     CONNECTOR_SVG: 'inspector-connector-svg',
     RADAR_CONTAINER: 'radar-container',
-    RADAR_POLYGON: 'radar-polygon'
+    RADAR_POLYGON: 'radar-polygon',
+    CONTAINER_TITLE: 'container-title'
 };
 
 export const CLASSES = {
@@ -78,5 +81,11 @@ export const STYLES = {
 
 export const DB_TYPE = {
     GET_SAVED_DECISIONS: 'GET_SAVED_DECISIONS',
-    SAVE_DECISION: 'SAVE_DECISION'
+    SAVE_DECISION: 'SAVE_DECISION',
+    SAVE_RECOMMENDED: 'SAVE_RECOMMENDED',
+    SAVE_PRIVACY_CHOICE: 'SAVE_PRIVACY_CHOICE',
+    SAVE_LOG: 'SAVE_LOG',
+    SAVE_INSPECTOR: 'SAVE_INSPECTOR',
+    SAVE_NOTE: 'SAVE_NOTE',
+    SAVE_FOLLOWUP: 'SAVE_FOLLOWUP'
 }
