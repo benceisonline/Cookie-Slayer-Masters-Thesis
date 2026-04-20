@@ -9,6 +9,10 @@ const nextBtn = document.getElementById('getStartedBtn');
 let currentStep = 0;
 let selectedPrivacy = '';
 
+// Name input elements (preferences slide)
+const nameContainer = document.getElementById('nameContainer');
+const nameInput = document.getElementById('nameInput');
+
 // If the welcome page is opened in its own tab/window (not in the
 // extension iframe), hide the final "Done" button since there's no
 // parent to close. When embedded in the extension iframe, show it.
@@ -70,6 +74,8 @@ function updateUI() {
     nextBtn.style.display = '';
     nextBtn.textContent = 'Next';
   }
+  // Update Next button enabled/disabled state for the preferences step
+  try { updateNextState(); } catch (e) {}
 }
 
 async function initializeUser() {
@@ -83,6 +89,23 @@ async function initializeUser() {
 }
 
 async function advanceStep() {
+  // If we're on the preferences step (index 6), require and save the name first
+  if (currentStep === 6) {
+    const nameVal = (nameInput?.value || '').trim();
+    if (!nameVal) {
+      if (nameInput) {
+        nameInput.style.borderColor = '#e74c3c';
+        nameInput.focus();
+      }
+      return; // block advancing until name provided
+    }
+
+    try {
+      await saveNameIfNeeded();
+    } catch (e) {
+      console.error('Failed saving name:', e);
+    }
+  }
   if (currentStep < steps.length - 1) {
     currentStep += 1;
     updateUI();
@@ -100,6 +123,64 @@ async function advanceStep() {
   // Final step: save settings and close overlay
   await chrome.storage.local.set(settingsToSave);
   window.parent.postMessage({ type: 'close-welcome' }, '*');  
+}
+
+// Save optional name from the preferences slide and remove the field so it's no longer accessible
+async function saveNameIfNeeded() {
+  if (!nameContainer) return;
+  const stored = await chrome.storage.local.get('userName');
+  if (stored?.userName) {
+    // already saved — remove the field
+    nameContainer.remove();
+    return;
+  }
+
+  const name = (nameInput?.value || '').trim();
+  if (!name) {
+    // do not save empty names; keep the field so user can enter it
+    return;
+  }
+
+  const userId = await initializeUser();
+  await chrome.storage.local.set({ userName: name });
+
+  // Optionally log to backend (non-blocking)
+  try {
+    await interactWithDB(DB_TYPE.SAVE_LOG, { userId, event: 'SAVE_USER_NAME', name });
+  } catch (e) {
+    // ignore backend failures for name save
+  }
+
+  // Remove input so it is not accessible anymore
+  nameContainer.remove();
+}
+
+// Enable/disable Next button depending on whether name is filled on the preferences step
+function updateNextState() {
+  if (!nextBtn) return;
+  if (currentStep === 6) {
+    // If the name field was already removed (name saved), allow advancing
+    if (!nameContainer) {
+      nextBtn.disabled = false;
+      nextBtn.style.opacity = '';
+      return;
+    }
+
+    const hasName = !!(nameInput && nameInput.value && nameInput.value.trim());
+    nextBtn.disabled = !hasName;
+    nextBtn.style.opacity = hasName ? '' : '0.6';
+  } else {
+    nextBtn.disabled = false;
+    nextBtn.style.opacity = '';
+  }
+}
+
+// Listen for input changes to enable Next when appropriate
+if (nameInput) {
+  nameInput.addEventListener('input', () => {
+    nameInput.style.borderColor = '';
+    updateNextState();
+  });
 }
 
 async function savePrivacyLevel(userId, level) {
@@ -133,3 +214,10 @@ privacyOptions.forEach(btn => {
 });
 
 updateUI();
+// On load, if name already present remove the field
+(async () => {
+  try {
+    const stored = await chrome.storage.local.get('userName');
+    if (stored?.userName && nameContainer) nameContainer.remove();
+  } catch (e) {}
+})();
