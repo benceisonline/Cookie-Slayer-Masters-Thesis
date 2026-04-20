@@ -88,9 +88,20 @@ async function getDefaultPreferences() {
 export function getAllCategoryShapes(groupedPreferences) {
   const shapesByCategory = {};
 
-  for (const [category, preferences] of Object.entries(groupedPreferences)) {
+  const defaultPrefs = groupedPreferences[DEFAULT.DEFAULT] || [];
+
+  const allCategories = [
+    ...Object.values(WEBSITE_CATEGORIES),
+    ...Object.values(DEFAULT)
+  ];
+
+  allCategories.forEach((category) => {
+    const preferences = (groupedPreferences[category] && groupedPreferences[category].length > 0)
+      ? groupedPreferences[category]
+      : defaultPrefs;
+      
     shapesByCategory[category] = calculateShape(preferences);
-  }
+  });
 
   return shapesByCategory;
 }
@@ -104,11 +115,10 @@ function calculateShape(preferences) {
     CUSTOMIZE: MIN_VALUE 
   };
 
-  if (!preferences || preferences.length === 0) return stats;
+  if (!preferences) return stats;
 
   const isDefaultCategory = preferences.some(p => p.category === DEFAULT.DEFAULT);
-
-  if (isDefaultCategory) {
+  if (isDefaultCategory || preferences.length === 0) {
     preferences.forEach(p => {
       const action = p.decision;
       if (stats.hasOwnProperty(action)) {

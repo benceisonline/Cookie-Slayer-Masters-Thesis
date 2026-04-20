@@ -149,3 +149,20 @@ export async function saveFollowup(payload) {
   if (error) throw error;
   return data;
 }
+
+/**
+ * Saves or updates the user
+ * @param {map} payload - payload
+ */
+export async function saveUser(payload) {
+  const { data, error } = await supabase
+    .from('user')
+    .upsert({
+      user_name: payload.userName,
+    })
+    .select('id')
+    .single();
+
+  if (error) throw error;
+  return data.id;
+}

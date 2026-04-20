@@ -46,8 +46,8 @@ export const VAL = {
 export const PATTERNS = {
     necessary: /(?=(.*(accept|agree|allow|tillad)))?.*(necessary|nødvendige|nødvendig|essential|kun\s+nødvendige)/i,
     customize: /(preference(s|r)?|præferencer|indstillinger|valgmuligheder|administrer|purpose|formål|manage|vis\s+detaljer)/i,
-    accept: /(accept(er|ér|ance)|tillad|allow|godkend|all|alle)(\s+alle|all)?/i,
-    reject: /(reject|afvis|deny|decline|nej\s+tak)(\s+alle)?/i,
+    accept: /(accept(er|ér|ance)?|tillad|allow|godkend)(\s+(all|alle))?/i,
+    reject: /(reject|afvis|deny|decline|nej\s+tak)(\s+alle|all)?/i
 };
 
 export const IDS = {
@@ -87,5 +87,6 @@ export const DB_TYPE = {
     SAVE_LOG: 'SAVE_LOG',
     SAVE_INSPECTOR: 'SAVE_INSPECTOR',
     SAVE_NOTE: 'SAVE_NOTE',
-    SAVE_FOLLOWUP: 'SAVE_FOLLOWUP'
+    SAVE_FOLLOWUP: 'SAVE_FOLLOWUP',
+    SAVE_USER: 'SAVE_USER'
 }

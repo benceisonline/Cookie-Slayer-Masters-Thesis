@@ -1,5 +1,5 @@
 import { DB_TYPE } from "./common/types.js";
-import { getDecisions, saveDecision, saveInspector, saveLog, savePrivacyChoice, saveRecommended, saveNote, saveFollowup } from "./supabase/operations.js";
+import { getDecisions, saveDecision, saveInspector, saveLog, savePrivacyChoice, saveRecommended, saveNote, saveFollowup, saveUser } from "./supabase/operations.js";
 
 // Open welcome page on every reload (for testing)
 chrome.runtime.onInstalled.addListener(() => {
@@ -68,6 +68,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       break;
     case DB_TYPE.SAVE_FOLLOWUP:
       saveFollowup(request.payload)
+        .then(data => sendResponse({ success: true, data }))
+        .catch(err => sendResponse({ success: false, error: err.message }));
+      break;
+    case DB_TYPE.SAVE_USER:
+      saveUser(request.payload)
         .then(data => sendResponse({ success: true, data }))
         .catch(err => sendResponse({ success: false, error: err.message }));
       break;
