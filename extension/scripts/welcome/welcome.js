@@ -18,12 +18,10 @@ const nameInput = document.getElementById('nameInput');
 // parent to close. When embedded in the extension iframe, show it.
 const isEmbedded = (window.self !== window.top);
 
-// Allow dot navigation
-dots.forEach((dot, index) => {
-  dot.addEventListener('click', () => {
-    currentStep = index;
-    updateUI();
-  });
+// Dots are indicators only; disable interaction and prevent focus
+dots.forEach(dot => {
+  dot.setAttribute('aria-hidden', 'true');
+  dot.tabIndex = -1;
 });
 
 function updateUI() {
