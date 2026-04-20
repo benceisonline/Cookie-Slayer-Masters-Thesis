@@ -82,6 +82,7 @@ async function initializeUser(name) {
   if (!userId) {
     const savedUserId = await saveUser(name);
     await chrome.storage.local.set({ userId: savedUserId });
+    return savedUserId;
   }
   return userId;
 }
