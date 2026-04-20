@@ -89,19 +89,23 @@ async function initializeUser() {
 async function advanceStep() {
   // If we're on the preferences step (index 6), require and save the name first
   if (currentStep === 6) {
-    const nameVal = (nameInput?.value || '').trim();
-    if (!nameVal) {
-      if (nameInput) {
-        nameInput.style.borderColor = '#e74c3c';
-        nameInput.focus();
+    // If a name was already saved or the input element has been removed, allow advancing
+    const stored = await chrome.storage.local.get('userName');
+    if (!(stored?.userName) && nameContainer && nameContainer.isConnected) {
+      const nameVal = (nameInput?.value || '').trim();
+      if (!nameVal) {
+        if (nameInput) {
+          nameInput.style.borderColor = '#e74c3c';
+          nameInput.focus();
+        }
+        return; // block advancing until name provided
       }
-      return; // block advancing until name provided
-    }
 
-    try {
-      await saveNameIfNeeded();
-    } catch (e) {
-      console.error('Failed saving name:', e);
+      try {
+        await saveNameIfNeeded();
+      } catch (e) {
+        console.error('Failed saving name:', e);
+      }
     }
   }
   if (currentStep < steps.length - 1) {
@@ -125,7 +129,7 @@ async function advanceStep() {
 
 // Save optional name from the preferences slide and remove the field so it's no longer accessible
 async function saveNameIfNeeded() {
-  if (!nameContainer) return;
+  if (!nameContainer || !nameContainer.isConnected) return;
   const stored = await chrome.storage.local.get('userName');
   if (stored?.userName) {
     // already saved — remove the field
@@ -158,7 +162,7 @@ function updateNextState() {
   if (!nextBtn) return;
   if (currentStep === 6) {
     // If the name field was already removed (name saved), allow advancing
-    if (!nameContainer) {
+    if (!nameContainer || !nameContainer.isConnected) {
       nextBtn.disabled = false;
       nextBtn.style.opacity = '';
       return;
@@ -216,6 +220,6 @@ updateUI();
 (async () => {
   try {
     const stored = await chrome.storage.local.get('userName');
-    if (stored?.userName && nameContainer) nameContainer.remove();
+    if (stored?.userName && nameContainer && nameContainer.isConnected) nameContainer.remove();
   } catch (e) {}
 })();
