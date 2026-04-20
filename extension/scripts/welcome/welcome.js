@@ -76,14 +76,29 @@ function updateUI() {
   try { updateNextState(); } catch (e) {}
 }
 
-async function initializeUser() {
-  const result = await chrome.storage.local.get("userId");
-  let userId = result.userId
+async function initializeUser(name) {
+  const userIdResult = await chrome.storage.local.get("userId");
+  let userId = userIdResult.userId;
   if (!userId) {
-    userId = crypto.randomUUID();
-    await chrome.storage.local.set({ userId: userId });
+    const savedUserId = await saveUser(name);
+    await chrome.storage.local.set({ userId: savedUserId });
   }
   return userId;
+}
+
+async function saveUser(username) {
+  const payload = {
+    userName: username
+  }
+  
+  const response = await interactWithDB(DB_TYPE.SAVE_USER, payload);
+
+  if (response?.success) {
+    console.log(`Saving user: ${payload.userName}`);
+    return response.data; 
+  } else {
+    console.error("Save failed:", response?.error);
+  }
 }
 
 async function advanceStep() {
@@ -100,30 +115,30 @@ async function advanceStep() {
         }
         return; // block advancing until name provided
       }
+    }
 
-      try {
-        await saveNameIfNeeded();
-      } catch (e) {
-        console.error('Failed saving name:', e);
-      }
+    try {
+      const username = await saveNameIfNeeded();
+      const userId = await initializeUser(username);
+      await savePrivacyLevel(userId, selectedPrivacy);
+
+      const settingsToSave = { 
+        welcomeSeen: true, 
+        privacyLevel: selectedPrivacy,
+      };
+
+      await chrome.storage.local.set(settingsToSave);
+    } catch (e) {
+      console.error('Failed saving name:', e);
     }
   }
+
   if (currentStep < steps.length - 1) {
     currentStep += 1;
     updateUI();
     return;
   }
-
-  const userId = await initializeUser();
-  await savePrivacyLevel(userId, selectedPrivacy);
-
-  const settingsToSave = { 
-    welcomeSeen: true, 
-    privacyLevel: selectedPrivacy,
-  };
-
-  // Final step: save settings and close overlay
-  await chrome.storage.local.set(settingsToSave);
+  
   window.parent.postMessage({ type: 'close-welcome' }, '*');  
 }
 
@@ -143,18 +158,12 @@ async function saveNameIfNeeded() {
     return;
   }
 
-  const userId = await initializeUser();
   await chrome.storage.local.set({ userName: name });
-
-  // Optionally log to backend (non-blocking)
-  try {
-    await interactWithDB(DB_TYPE.SAVE_LOG, { userId, event: 'SAVE_USER_NAME', name });
-  } catch (e) {
-    // ignore backend failures for name save
-  }
 
   // Remove input so it is not accessible anymore
   nameContainer.remove();
+
+  return name;
 }
 
 // Enable/disable Next button depending on whether name is filled on the preferences step

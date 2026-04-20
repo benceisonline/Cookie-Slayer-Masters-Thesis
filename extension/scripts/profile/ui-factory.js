@@ -262,8 +262,6 @@ function createRadarShape(container, stats) {
 }
 
 function syncOverlays(stats) {
-  let hasVisibleBadge = false
-
   foundButtons.forEach(item => {
     const buttonNode = item.element;
     if (!buttonNode) return;
@@ -274,26 +272,20 @@ function syncOverlays(stats) {
     const categoryKey = item.category.toUpperCase();
     const statValue = stats[categoryKey] || 0;
 
-    if (statValue >= 0.5) {
-      hasVisibleBadge = true;
-      createBadge(buttonNode, categoryKey);
-    }
+    createBadge(buttonNode, categoryKey, statValue >= 0.5);
   });
-
-  if (!hasVisibleBadge && foundButtons.length > 0) {
-    showError("No buttons match your current preferences.");
-  }
 }
 
-function createBadge(parent, category) {
+function createBadge(parent, category, isRecommended) {
   parent.style.position = 'relative';
   const badge = document.createElement('div');
   badge.id = `badge-${category}`;
   badge.className = 'badge';
-  badge.innerText = '✔️'; 
+  badge.innerText = isRecommended ? '✔️' : 'i'; 
+  badge.style.backgroundColor = isRecommended ? '#11FF00' : '#000000';
   Object.assign(badge.style, {
       position: 'absolute', top: '0', right: '0', transform: 'translate(50%, -50%)',
-      width: '20px', height: '20px', backgroundColor: '#11FF00', color: 'white',
+      width: '20px', height: '20px', color: 'white',
       borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
       fontSize: '12px', zIndex: '2147483647', cursor: 'pointer'
   });
@@ -318,10 +310,11 @@ function createOverlays(stats) {
 function shift(direction) {
   const len = categoryIndexMap.length;
   if (len === 0) return;
+
+  const nextIndex = currentIndex + direction;
+  if (nextIndex > categoryIndexMap.length || nextIndex < 0) return;
   
-  currentIndex = (direction === 1) 
-    ? (currentIndex + 1) % len 
-    : (currentIndex - 1 + len) % len;
+  currentIndex = nextIndex;
     
   reshapeUI();
 }

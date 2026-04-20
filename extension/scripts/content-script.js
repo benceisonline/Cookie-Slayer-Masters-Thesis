@@ -79,7 +79,7 @@ async function startApp() {
     if (results && results.length > 0) {
         await initProfile(results);
     } else {
-        showError("We couldn't find any cookie related buttons on this site");
+        console.log(`We couldn't find any cookie related buttons on this site ${document.title}`);
     }
 }
 
