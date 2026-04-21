@@ -219,7 +219,7 @@ export function createEditContainer() {
     container.innerHTML = `
         <div class="ci-suggestions" style="display:flex; flex-direction:column; gap:6px; margin-bottom:8px; width:100%;"></div>
         <form id="${IDS.EDIT_FORM}" style="display:flex; align-items:center; gap:8px; flex-wrap:nowrap;">
-            <textarea id="${IDS.EDIT_INPUT}" placeholder="What can I help you with?" style="flex:1 1 auto; min-width:200px; width:100%; max-width:none; padding:8px; border-radius:6px; border:1px solid #ccc; box-sizing:border-box;"></textarea>
+            <textarea id="${IDS.EDIT_INPUT}" placeholder="What can I help you with?" style="flex:1 1 auto; min-width:200px; width:100%; max-width:none; padding:8px; border-radius:6px; border:1px solid #ccc; box-sizing:border-box; background:#fff; color:#000; caret-color:#000;"></textarea>
             <button type="submit" id="ci-edit-submit" style="margin-left:6px; padding:6px 10px; border-radius:6px; background:#3498db; color:#fff; display:flex; align-items:center; white-space:nowrap;" disabled>
                 <span class="ci-edit-label">Send</span>
                 <div class="ci-spinner" style="display:none; margin-left:8px"></div>
