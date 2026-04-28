@@ -112,9 +112,9 @@ function createHeader(container, category) {
 
   const title = document.createElement('div');
   title.id = IDS.CONTAINER_TITLE;
-  title.innerText = category.toUpperCase();
+  title.innerText = `Applying ${String(category).charAt(0).toUpperCase() + String(category).slice(1).toLowerCase()} profile`;
   Object.assign(title.style, {
-    fontSize: '13px',
+    fontSize: '11px',
     fontWeight: '800',
     color: '#1e293b',
     letterSpacing: '0.05em'
@@ -324,7 +324,7 @@ function reshapeUI() {
   if (!active) return;
 
   const title = document.getElementById(IDS.CONTAINER_TITLE);
-  if (title) title.innerText = active.category.toUpperCase();
+  if (title) title.innerText = `Applying ${String(active.category).charAt(0).toUpperCase() + String(active.category).slice(1).toLowerCase()} profile`;
 
   const container = document.getElementById(IDS.RADAR_CONTAINER);
   if (container) {

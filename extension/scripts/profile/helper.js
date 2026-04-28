@@ -64,7 +64,9 @@ async function getDefaultPreferences() {
   switch ((data?.privacyLevel ?? "").toUpperCase()) {
     case "LOW":
       return [
-        {category: DEFAULT.DEFAULT, decision: DECISIONS.ACCEPT}
+        {category: DEFAULT.DEFAULT, decision: DECISIONS.ACCEPT},
+        {category: DEFAULT.DEFAULT, decision: DECISIONS.CUSTOMIZE}, 
+        {category: DEFAULT.DEFAULT, decision: DECISIONS.NECESSARY},
       ];
     case "MEDIUM":
       return [
