@@ -93,6 +93,12 @@
       overflow: hidden; /* clip overflowing video to rounded corners */
     }
 
+    /* Make only the privacy (preferences) slide wider */
+    .welcome-container.privacy-active {
+      max-width: 640px;
+      padding: 32px 28px;
+    }
+
     @keyframes bounce {
 
       0%,
@@ -124,6 +130,12 @@
       color: #333;
       margin: 10px 0 16px;
       font-weight: 700;
+    }
+    .step-hint {
+      font-size: 13px;
+      color: #777;
+      margin-top: 8px;
+      margin-bottom: 12px;
     }
 
     .step-title {
@@ -217,6 +229,42 @@
       flex-direction: column;
       gap: 12px;
       margin-top: 16px;
+    }
+
+    .privacy-row {
+      display: flex;
+      gap: 16px;
+      align-items: stretch; /* stretch so preview matches options height */
+      justify-content: space-between;
+      margin-top: 12px;
+    }
+
+    .privacy-options {
+      flex: 1 1 auto;
+    }
+
+    .privacy-preview {
+      margin-top: 0;
+      flex: 0 0 300px; /* reserve horizontal space for wider images (slightly reduced) */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      align-self: stretch; /* stretch vertically to match the options column */
+      box-sizing: border-box;
+      padding: 6px; /* reduced padding */
+    }
+
+    .privacy-preview img {
+      width: auto;
+      max-width: 300px;
+      max-height: 260px; /* slightly taller to better match option column */
+      object-fit: contain;
+      border-radius: 10px;
+      border: 1px solid #eee;
+      background: #fff;
+      padding: 4px; /* reduced padding so image sits closer to frame */
+      display: block;
+      box-sizing: border-box;
     }
 
     .privacy-option {
@@ -362,12 +410,13 @@
       <div class="step" data-step="6">
         <h1 class="step-title">CookieSlayer</h1>
         <h2 class="step-heading">Your Privacy Concern Level</h2>
-        <div class="privacy-options">
+        <p class="step-hint">You can always change your preferences in the future.</p>
+        <div class="privacy-row">
+          <div class="privacy-options">
           <button class="privacy-option" data-value="high">
             <span class="privacy-option-icon">🔒</span>
             <div>
               <strong>Maximum Privacy</strong><br>
-              <span class="privacy-description">Prefer rejecting all cookies.</span><br>
               <span class="privacy-description"><em>I want to keep my data to myself.</em></span>
             </div>
           </button>
@@ -375,7 +424,6 @@
             <span class="privacy-option-icon">🔐</span>
             <div>
               <strong>Medium Privacy</strong><br>
-              <span class="privacy-description">Prefer allowing some cookies or customizing.</span><br>
               <span class="privacy-description"><em>I can be a bit more loose about my data at times.</em></span>
             </div>
           </button>
@@ -383,10 +431,15 @@
             <span class="privacy-option-icon">🔓</span>
             <div>
               <strong>Low Privacy</strong><br>
-              <span class="privacy-description">No preference towards your cookie choices.</span><br>
                 <span class="privacy-description"><em>I do not care about what happens to my data.</em></span>
             </div>
           </button>
+          </div>
+
+          <div class="privacy-preview" aria-hidden="true">
+            <img id="privacyPreview" src="images/default.png" alt="Privacy preview" />
+          </div>
+
         </div>
         <!-- Name input saved on Next and then removed -->
         <div id="nameContainer" style="margin-top:16px; text-align:left;">

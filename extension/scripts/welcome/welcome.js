@@ -18,6 +18,52 @@ const nameInput = document.getElementById('nameInput');
 // parent to close. When embedded in the extension iframe, show it.
 const isEmbedded = (window.self !== window.top);
 
+// If this script runs inside the extension popup/iframe, add a small
+// accessible close button (X) in the top-right corner to allow users
+// to dismiss the popup quickly. Clicking it will request the parent
+// to close the welcome UI (same message used when finishing).
+if (isEmbedded) {
+  try {
+    const container = document.querySelector('.welcome-container') || document.body;
+    const closeBtn = document.createElement('button');
+    closeBtn.id = 'welcomeCloseBtn';
+    closeBtn.className = 'welcome-close-btn';
+    closeBtn.type = 'button';
+    closeBtn.setAttribute('aria-label', 'Close welcome');
+    closeBtn.textContent = '\u00D7'; // multiplication sign (×)
+
+    // Basic inline styles to place it in the top-right; keeps change minimal
+    closeBtn.style.position = 'absolute';
+    closeBtn.style.top = '8px';
+    closeBtn.style.right = '8px';
+    closeBtn.style.width = '32px';
+    closeBtn.style.height = '32px';
+    closeBtn.style.border = 'none';
+    closeBtn.style.background = 'transparent';
+    closeBtn.style.color = '#333';
+    closeBtn.style.fontSize = '20px';
+    closeBtn.style.cursor = 'pointer';
+    closeBtn.style.lineHeight = '1';
+    closeBtn.style.padding = '0';
+
+    // Hover affordance
+    closeBtn.addEventListener('mouseenter', () => closeBtn.style.color = '#000');
+    closeBtn.addEventListener('mouseleave', () => closeBtn.style.color = '#333');
+
+    // When clicked, ask the parent to close the welcome UI (same action as Done)
+    closeBtn.addEventListener('click', () => {
+      try { window.parent.postMessage({ type: 'close-welcome' }, '*'); } catch (e) { try { window.close(); } catch (ee) {} }
+    });
+
+    // Ensure container is positioned so absolute child works
+    try {
+      const cs = window.getComputedStyle(container);
+      if (cs.position === 'static' || !cs.position) container.style.position = 'relative';
+    } catch (e) {}
+
+    container.appendChild(closeBtn);
+  } catch (e) {}
+}
 // Dots are indicators only; disable interaction and prevent focus
 dots.forEach(dot => {
   dot.setAttribute('aria-hidden', 'true');
@@ -40,6 +86,12 @@ function updateUI() {
       container.classList.add('video-active');
     } else {
       container.classList.remove('video-active');
+    }
+    // Toggle wider layout for privacy/preferences slide (data-step="6") only
+    if (activeStep && activeStep.dataset && activeStep.dataset.step === '6') {
+      container.classList.add('privacy-active');
+    } else {
+      container.classList.remove('privacy-active');
     }
   } catch (e) {}
 
@@ -215,6 +267,24 @@ nextBtn.addEventListener('click', async () => {
   await advanceStep();
 });
 
+// Privacy preview helper: map level -> image path and update preview
+function getPreviewPath(level) {
+  switch (level) {
+    case 'high': return 'images/high.png';
+    case 'medium': return 'images/medium.png';
+    case 'low': return 'images/low.png';
+    default: return 'images/default.png';
+  }
+}
+
+function updatePrivacyPreview(level) {
+  try {
+    const img = document.getElementById('privacyPreview');
+    if (!img) return;
+    img.src = getPreviewPath(level);
+  } catch (e) {}
+}
+
 // Privacy selection
 const privacyOptions = Array.from(document.querySelectorAll('.privacy-option'));
 privacyOptions.forEach(btn => {
@@ -222,10 +292,13 @@ privacyOptions.forEach(btn => {
     privacyOptions.forEach(o => o.classList.remove('selected'));
     btn.classList.add('selected');
     selectedPrivacy = btn.dataset.value;
+    updatePrivacyPreview(selectedPrivacy);
   });
 });
 
 updateUI();
+// ensure preview reflects current (none) selection on load
+try { updatePrivacyPreview(selectedPrivacy); } catch (e) {}
 // On load, if name already present remove the field
 (async () => {
   try {
