@@ -281,8 +281,8 @@ function createBadge(parent, category, isRecommended) {
   const badge = document.createElement('div');
   badge.id = `badge-${category}`;
   badge.className = 'badge';
-  badge.innerText = isRecommended ? '✔️' : 'i'; 
-  badge.style.backgroundColor = isRecommended ? '#11FF00' : '#000000';
+  badge.innerText = isRecommended ? '✔️' : 'X'; 
+  badge.style.backgroundColor = isRecommended ? '#21E213' : '#D31313';
   Object.assign(badge.style, {
       position: 'absolute', top: '0', right: '0', transform: 'translate(50%, -50%)',
       width: '20px', height: '20px', color: 'white',
